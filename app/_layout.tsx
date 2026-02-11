@@ -7,6 +7,8 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { ShiftProvider } from "@/lib/ShiftContext";
+import { ThemeProvider } from "@/lib/ThemeContext";
+import { NotesProvider } from "@/lib/NotesContext";
 import { useFonts, Cairo_400Regular, Cairo_600SemiBold, Cairo_700Bold } from "@expo-google-fonts/cairo";
 
 SplashScreen.preventAutoHideAsync();
@@ -19,7 +21,7 @@ function RootLayoutNav() {
         name="day-detail"
         options={{
           presentation: "formSheet",
-          sheetAllowedDetents: [0.45],
+          sheetAllowedDetents: [0.75],
           sheetGrabberVisible: true,
           headerShown: false,
         }}
@@ -48,9 +50,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView>
           <KeyboardProvider>
-            <ShiftProvider>
-              <RootLayoutNav />
-            </ShiftProvider>
+            <ThemeProvider>
+              <ShiftProvider>
+                <NotesProvider>
+                  <RootLayoutNav />
+                </NotesProvider>
+              </ShiftProvider>
+            </ThemeProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

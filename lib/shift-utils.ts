@@ -49,26 +49,26 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
 export const PRESET_PATTERNS: RotationPattern[] = [
   {
     id: "2x2",
-    name: "2×2",
-    nameAr: "2×2",
+    name: "2x2",
+    nameAr: "2x2",
     shifts: ["morning", "morning", "rest", "rest"],
   },
   {
     id: "2x2_me",
-    name: "2×2 (M+E)",
-    nameAr: "2×2 (صباحي+مسائي)",
+    name: "2x2 (M+E)",
+    nameAr: "2x2 (صباحي+مسائي)",
     shifts: ["morning", "morning", "evening", "evening", "rest", "rest"],
   },
   {
     id: "4x4",
-    name: "4×4",
-    nameAr: "4×4",
+    name: "4x4",
+    nameAr: "4x4",
     shifts: ["morning", "morning", "morning", "morning", "rest", "rest", "rest", "rest"],
   },
   {
     id: "4x4_full",
-    name: "4×4 Full Rotation",
-    nameAr: "4×4 دورة كاملة",
+    name: "4x4 Full Rotation",
+    nameAr: "4x4 دورة كاملة",
     shifts: [
       "morning", "morning", "morning", "morning",
       "rest", "rest", "rest", "rest",
@@ -80,8 +80,8 @@ export const PRESET_PATTERNS: RotationPattern[] = [
   },
   {
     id: "3x3",
-    name: "3×3",
-    nameAr: "3×3",
+    name: "3x3",
+    nameAr: "3x3",
     shifts: ["morning", "morning", "morning", "rest", "rest", "rest"],
   },
 ];
@@ -114,7 +114,17 @@ export const MONTH_NAMES_AR = [
   "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
 ];
 
+export const MONTH_NAMES_EN = [
+  "January", "February", "March", "April",
+  "May", "June", "July", "August",
+  "September", "October", "November", "December",
+];
+
 export const DAY_NAMES_AR = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"];
+export const DAY_NAMES_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export const DAY_FULL_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+export const DAY_FULL_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export function formatDate(date: Date): string {
   const y = date.getFullYear();
@@ -126,4 +136,25 @@ export function formatDate(date: Date): string {
 export function parseDate(dateStr: string): Date {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+export function searchDatesForShift(
+  shiftType: ShiftType,
+  startDate: Date,
+  pattern: ShiftType[],
+  fromDate: Date,
+  count: number
+): Date[] {
+  const results: Date[] = [];
+  const current = new Date(fromDate);
+  let safety = 0;
+  while (results.length < count && safety < 730) {
+    const shift = getShiftForDate(current, startDate, pattern);
+    if (shift === shiftType) {
+      results.push(new Date(current));
+    }
+    current.setDate(current.getDate() + 1);
+    safety++;
+  }
+  return results;
 }

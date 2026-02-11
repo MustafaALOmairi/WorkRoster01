@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,8 +12,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeIn } from "react-native-reanimated";
-import Colors from "@/constants/colors";
+import { useColors } from "@/lib/useColors";
+import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
+import { useNotes } from "@/lib/NotesContext";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
@@ -21,16 +23,20 @@ import {
   getDaysInMonth,
   getFirstDayOfMonth,
   MONTH_NAMES_AR,
+  MONTH_NAMES_EN,
   DAY_NAMES_AR,
+  DAY_NAMES_EN,
   parseDate,
 } from "@/lib/shift-utils";
 
-function ShiftBadge({ type }: { type: ShiftType }) {
+function ShiftBadge({ type, colors, lang }: { type: ShiftType; colors: ReturnType<typeof useColors>; lang: string }) {
   const def = SHIFT_DEFINITIONS[type];
-  const shiftColor = Colors.shifts[type];
+  const shiftColor = colors.shifts[type];
   return (
     <View style={[styles.shiftBadge, { backgroundColor: shiftColor.color }]}>
-      <Text style={styles.shiftBadgeText}>{def.labelAr}</Text>
+      <Text style={styles.shiftBadgeText}>
+        {lang === "ar" ? def.labelAr : def.label}
+      </Text>
     </View>
   );
 }
@@ -40,10 +46,15 @@ interface CalendarDayCellProps {
   shiftType: ShiftType;
   isToday: boolean;
   date: Date;
+  colors: ReturnType<typeof useColors>;
+  hasNote: boolean;
 }
 
-function CalendarDayCell({ day, shiftType, isToday, date }: CalendarDayCellProps) {
-  const shiftColor = Colors.shifts[shiftType];
+function CalendarDayCell({ day, shiftType, isToday, date, colors, hasNote }: CalendarDayCellProps) {
+  const shiftColor = colors.shifts[shiftType];
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dateParam = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const handlePress = () => {
     if (Platform.OS !== "web") {
@@ -51,19 +62,29 @@ function CalendarDayCell({ day, shiftType, isToday, date }: CalendarDayCellProps
     }
     router.push({
       pathname: "/day-detail",
-      params: {
-        date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-      },
+      params: { date: dateParam },
+    });
+  };
+
+  const handleLongPress = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    }
+    router.push({
+      pathname: "/day-detail",
+      params: { date: dateParam },
     });
   };
 
   return (
     <Pressable
       onPress={handlePress}
+      onLongPress={handleLongPress}
+      delayLongPress={400}
       style={({ pressed }) => [
         styles.dayCell,
         { backgroundColor: shiftColor.bg, opacity: pressed ? 0.7 : 1 },
-        isToday && styles.todayCell,
+        isToday && { borderWidth: 2, borderColor: colors.accent },
       ]}
     >
       <Text
@@ -75,46 +96,43 @@ function CalendarDayCell({ day, shiftType, isToday, date }: CalendarDayCellProps
       >
         {day}
       </Text>
-      <View style={[styles.shiftDot, { backgroundColor: shiftColor.color }]} />
+      <View style={styles.dotRow}>
+        <View style={[styles.shiftDot, { backgroundColor: shiftColor.color }]} />
+        {hasNote && (
+          <View style={[styles.noteDot, { backgroundColor: colors.accent }]} />
+        )}
+      </View>
     </Pressable>
   );
 }
 
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const { language, t } = useAppTheme();
   const { config, isLoaded } = useShiftConfig();
+  const { notes } = useNotes();
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
 
+  const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
+  const dayNames = language === "ar" ? DAY_NAMES_AR : DAY_NAMES_EN;
+
   const goToPrevMonth = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear((y) => y - 1);
-    } else {
-      setCurrentMonth((m) => m - 1);
-    }
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear((y) => y - 1); }
+    else setCurrentMonth((m) => m - 1);
   }, [currentMonth]);
 
   const goToNextMonth = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear((y) => y + 1);
-    } else {
-      setCurrentMonth((m) => m + 1);
-    }
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear((y) => y + 1); }
+    else setCurrentMonth((m) => m + 1);
   }, [currentMonth]);
 
   const goToToday = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setCurrentYear(today.getFullYear());
     setCurrentMonth(today.getMonth());
   }, []);
@@ -126,79 +144,67 @@ export default function CalendarScreen() {
   const startDate = parseDate(config.startDate);
 
   const calendarDays: (number | null)[] = [];
-  for (let i = 0; i < firstDay; i++) {
-    calendarDays.push(null);
-  }
-  for (let d = 1; d <= daysInMonth; d++) {
-    calendarDays.push(d);
-  }
-  while (calendarDays.length % 7 !== 0) {
-    calendarDays.push(null);
-  }
+  for (let i = 0; i < firstDay; i++) calendarDays.push(null);
+  for (let d = 1; d <= daysInMonth; d++) calendarDays.push(d);
+  while (calendarDays.length % 7 !== 0) calendarDays.push(null);
 
   const weeks: (number | null)[][] = [];
-  for (let i = 0; i < calendarDays.length; i += 7) {
-    weeks.push(calendarDays.slice(i, i + 7));
-  }
+  for (let i = 0; i < calendarDays.length; i += 7) weeks.push(calendarDays.slice(i, i + 7));
 
-  const isCurrentMonth =
-    currentYear === today.getFullYear() && currentMonth === today.getMonth();
-
+  const isCurrentMonth = currentYear === today.getFullYear() && currentMonth === today.getMonth();
   const todayShift = getShiftForDate(today, startDate, config.pattern);
-
   const webTopInset = Platform.OS === "web" ? 67 : 0;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + webTopInset }]}>
+    <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top + webTopInset }]}>
       <Animated.View entering={FadeIn.duration(400)} style={styles.header}>
-        <View style={styles.todayCard}>
+        <View style={[styles.todayCard, { backgroundColor: colors.surfaceSecondary }]}>
           <View style={styles.todayCardLeft}>
-            <Text style={styles.todayLabel}>اليوم</Text>
-            <Text style={styles.todayDate}>
-              {today.getDate()} {MONTH_NAMES_AR[today.getMonth()]}
+            <Text style={[styles.todayLabel, { color: colors.textSecondary }]}>
+              {t("اليوم", "Today")}
+            </Text>
+            <Text style={[styles.todayDate, { color: colors.text }]}>
+              {today.getDate()} {monthNames[today.getMonth()]}
             </Text>
           </View>
-          <ShiftBadge type={todayShift} />
+          <ShiftBadge type={todayShift} colors={colors} lang={language} />
         </View>
       </Animated.View>
 
       <View style={styles.monthNav}>
-        <Pressable onPress={goToNextMonth} hitSlop={12}>
-          <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
+        <Pressable onPress={language === "ar" ? goToNextMonth : goToPrevMonth} hitSlop={12}>
+          <Ionicons name={language === "ar" ? "chevron-forward" : "chevron-back"} size={24} color={colors.primary} />
         </Pressable>
         <Pressable onPress={goToToday}>
-          <Text style={styles.monthTitle}>
-            {MONTH_NAMES_AR[currentMonth]} {currentYear}
+          <Text style={[styles.monthTitle, { color: colors.text }]}>
+            {monthNames[currentMonth]} {currentYear}
           </Text>
         </Pressable>
-        <Pressable onPress={goToPrevMonth} hitSlop={12}>
-          <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+        <Pressable onPress={language === "ar" ? goToPrevMonth : goToNextMonth} hitSlop={12}>
+          <Ionicons name={language === "ar" ? "chevron-back" : "chevron-forward"} size={24} color={colors.primary} />
         </Pressable>
       </View>
 
       <View style={styles.legend}>
         {(["morning", "evening", "night", "rest"] as ShiftType[]).map((type) => (
           <View key={type} style={styles.legendItem}>
-            <View
-              style={[styles.legendDot, { backgroundColor: Colors.shifts[type].color }]}
-            />
-            <Text style={styles.legendText}>{SHIFT_DEFINITIONS[type].labelAr}</Text>
+            <View style={[styles.legendDot, { backgroundColor: colors.shifts[type].color }]} />
+            <Text style={[styles.legendText, { color: colors.textSecondary }]}>
+              {language === "ar" ? SHIFT_DEFINITIONS[type].labelAr : SHIFT_DEFINITIONS[type].label}
+            </Text>
           </View>
         ))}
       </View>
 
       <ScrollView
         style={styles.calendarScroll}
-        contentContainerStyle={[
-          styles.calendarContent,
-          { paddingBottom: insets.bottom + 100 },
-        ]}
+        contentContainerStyle={[styles.calendarContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.weekDaysRow}>
-          {DAY_NAMES_AR.map((name) => (
+          {dayNames.map((name) => (
             <View key={name} style={styles.weekDayCell}>
-              <Text style={styles.weekDayText}>{name}</Text>
+              <Text style={[styles.weekDayText, { color: colors.textSecondary }]}>{name}</Text>
             </View>
           ))}
         </View>
@@ -206,20 +212,20 @@ export default function CalendarScreen() {
         {weeks.map((week, wi) => (
           <View key={wi} style={styles.weekRow}>
             {week.map((day, di) => {
-              if (day === null) {
-                return <View key={di} style={styles.emptyCell} />;
-              }
+              if (day === null) return <View key={di} style={styles.emptyCell} />;
               const cellDate = new Date(currentYear, currentMonth, day);
               const shiftType = getShiftForDate(cellDate, startDate, config.pattern);
-              const isToday =
-                isCurrentMonth && day === today.getDate();
+              const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const hasNote = !!notes[dateKey]?.text;
               return (
                 <CalendarDayCell
                   key={di}
                   day={day}
                   shiftType={shiftType}
-                  isToday={isToday}
+                  isToday={isCurrentMonth && day === today.getDate()}
                   date={cellDate}
+                  colors={colors}
+                  hasNote={hasNote}
                 />
               );
             })}
@@ -228,8 +234,10 @@ export default function CalendarScreen() {
 
         {!isCurrentMonth && (
           <Pressable onPress={goToToday} style={styles.goTodayButton}>
-            <Ionicons name="today-outline" size={18} color={Colors.accent} />
-            <Text style={styles.goTodayText}>العودة لليوم</Text>
+            <Ionicons name="today-outline" size={18} color={colors.accent} />
+            <Text style={[styles.goTodayText, { color: colors.accent }]}>
+              {t("العودة لليوم", "Go to Today")}
+            </Text>
           </Pressable>
         )}
       </ScrollView>
@@ -238,46 +246,20 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
+  container: { flex: 1 },
+  header: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
   todayCard: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.surfaceSecondary,
     borderRadius: 16,
     padding: 16,
   },
-  todayCardLeft: {
-    gap: 2,
-  },
-  todayLabel: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 13,
-    color: Colors.textSecondary,
-  },
-  todayDate: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 20,
-    color: Colors.text,
-  },
-  shiftBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  shiftBadgeText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 13,
-    color: "#FFF",
-  },
+  todayCardLeft: { gap: 2 },
+  todayLabel: { fontFamily: "Cairo_400Regular", fontSize: 13 },
+  todayDate: { fontFamily: "Cairo_700Bold", fontSize: 20 },
+  shiftBadge: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  shiftBadgeText: { fontFamily: "Cairo_600SemiBold", fontSize: 13, color: "#FFF" },
   monthNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -285,11 +267,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  monthTitle: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 18,
-    color: Colors.text,
-  },
+  monthTitle: { fontFamily: "Cairo_700Bold", fontSize: 18 },
   legend: {
     flexDirection: "row",
     justifyContent: "center",
@@ -297,45 +275,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  legendText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  calendarScroll: {
-    flex: 1,
-  },
-  calendarContent: {
-    paddingHorizontal: 12,
-  },
-  weekDaysRow: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  weekDayCell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  weekDayText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  weekRow: {
-    flexDirection: "row",
-    marginBottom: 6,
-  },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 4 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { fontFamily: "Cairo_400Regular", fontSize: 11 },
+  calendarScroll: { flex: 1 },
+  calendarContent: { paddingHorizontal: 12 },
+  weekDaysRow: { flexDirection: "row", marginBottom: 4 },
+  weekDayCell: { flex: 1, alignItems: "center", paddingVertical: 8 },
+  weekDayText: { fontFamily: "Cairo_600SemiBold", fontSize: 12 },
+  weekRow: { flexDirection: "row", marginBottom: 6 },
   dayCell: {
     flex: 1,
     aspectRatio: 1,
@@ -343,28 +291,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderRadius: 12,
     marginHorizontal: 3,
-    gap: 2,
+    gap: 1,
   },
-  todayCell: {
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  dayNumber: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 15,
-  },
-  todayText: {
-    fontFamily: "Cairo_700Bold",
-  },
-  shiftDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  emptyCell: {
-    flex: 1,
-    marginHorizontal: 3,
-  },
+  dayNumber: { fontFamily: "Cairo_600SemiBold", fontSize: 15 },
+  todayText: { fontFamily: "Cairo_700Bold" },
+  dotRow: { flexDirection: "row", gap: 3, alignItems: "center" },
+  shiftDot: { width: 5, height: 5, borderRadius: 2.5 },
+  noteDot: { width: 4, height: 4, borderRadius: 2 },
+  emptyCell: { flex: 1, marginHorizontal: 3 },
   goTodayButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -373,9 +307,5 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     marginTop: 8,
   },
-  goTodayText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    color: Colors.accent,
-  },
+  goTodayText: { fontFamily: "Cairo_600SemiBold", fontSize: 14 },
 });
