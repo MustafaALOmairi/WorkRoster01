@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
+import { useSound } from "@/lib/SoundContext";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
@@ -70,6 +71,7 @@ export default function SearchScreen() {
   const colors = useColors();
   const { language, t, isDark } = useAppTheme();
   const { config } = useShiftConfig();
+  const { playSound } = useSound();
   const [searchMode, setSearchMode] = useState<"single" | "range">("single");
   const [singleDate, setSingleDate] = useState(formatDate(new Date()));
   const [fromDate, setFromDate] = useState(formatDate(new Date()));
@@ -138,7 +140,7 @@ export default function SearchScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => { playSound("navigate"); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
@@ -151,6 +153,7 @@ export default function SearchScreen() {
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            playSound("toggle");
             setSearchMode("single");
           }}
           style={[styles.modeBtn, searchMode === "single" && { backgroundColor: colors.accent }]}
@@ -163,6 +166,7 @@ export default function SearchScreen() {
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            playSound("toggle");
             setSearchMode("range");
           }}
           style={[styles.modeBtn, searchMode === "range" && { backgroundColor: colors.accent }]}
@@ -180,13 +184,13 @@ export default function SearchScreen() {
             {t("اختر التاريخ", "Select Date")}
           </Text>
           <View style={styles.datePickerControls}>
-            <Pressable onPress={() => { setSingleDate(adjustDate(singleDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setSingleDate(adjustDate(singleDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="remove-circle-outline" size={32} color={colors.accent} />
             </Pressable>
             <Text style={[styles.datePickerValue, { color: colors.text }]}>
               {formatDisplayDate(singleDate)}
             </Text>
-            <Pressable onPress={() => { setSingleDate(adjustDate(singleDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setSingleDate(adjustDate(singleDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="add-circle-outline" size={32} color={colors.accent} />
             </Pressable>
           </View>
@@ -199,13 +203,13 @@ export default function SearchScreen() {
             {t("من", "From")}
           </Text>
           <View style={styles.datePickerControls}>
-            <Pressable onPress={() => { setFromDate(adjustDate(fromDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setFromDate(adjustDate(fromDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
             </Pressable>
             <Text style={[styles.datePickerValue, { color: colors.text }]}>
               {formatDisplayDate(fromDate)}
             </Text>
-            <Pressable onPress={() => { setFromDate(adjustDate(fromDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setFromDate(adjustDate(fromDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
             </Pressable>
           </View>
@@ -214,13 +218,13 @@ export default function SearchScreen() {
             {t("إلى", "To")}
           </Text>
           <View style={styles.datePickerControls}>
-            <Pressable onPress={() => { setToDate(adjustDate(toDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setToDate(adjustDate(toDate, -1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
             </Pressable>
             <Text style={[styles.datePickerValue, { color: colors.text }]}>
               {formatDisplayDate(toDate)}
             </Text>
-            <Pressable onPress={() => { setToDate(adjustDate(toDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
+            <Pressable onPress={() => { playSound("tap"); setToDate(adjustDate(toDate, 1)); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} hitSlop={8}>
               <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
             </Pressable>
           </View>

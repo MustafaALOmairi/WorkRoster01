@@ -14,6 +14,7 @@ import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
 import { useNotes } from "@/lib/NotesContext";
+import { useSound } from "@/lib/SoundContext";
 import { DrawerMenu } from "@/components/DrawerMenu";
 import {
   ShiftType,
@@ -50,6 +51,7 @@ function CalendarDayCell({
 }: CalendarDayCellProps) {
   const def = SHIFT_DEFINITIONS[shiftType];
   const shiftColor = colors.shifts[shiftType];
+  const { playSound } = useSound();
 
   const isSunday = dayOfWeek === 0;
   const isSaturday = dayOfWeek === 6;
@@ -61,6 +63,7 @@ function CalendarDayCell({
 
   const handlePress = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("select");
     onSelect();
   };
 
@@ -96,6 +99,7 @@ export default function CalendarScreen() {
   const { language, t, isDark } = useAppTheme();
   const { config, isLoaded } = useShiftConfig();
   const { notes } = useNotes();
+  const { playSound } = useSound();
   const today = new Date();
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
@@ -110,24 +114,28 @@ export default function CalendarScreen() {
 
   const goToPrevMonth = useCallback(() => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("tap");
     if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear((y) => y - 1); }
     else setCurrentMonth((m) => m - 1);
   }, [currentMonth]);
 
   const goToNextMonth = useCallback(() => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("tap");
     if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear((y) => y + 1); }
     else setCurrentMonth((m) => m + 1);
   }, [currentMonth]);
 
   const goToToday = useCallback(() => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSound("navigate");
     setCurrentYear(today.getFullYear());
     setCurrentMonth(today.getMonth());
     setSelectedDate(todayKey);
   }, []);
 
   const handleDrawerNavigate = (route: string) => {
+    playSound("navigate");
     setDrawerVisible(false);
     setTimeout(() => {
       router.push(route as any);
@@ -199,6 +207,7 @@ export default function CalendarScreen() {
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            playSound("open");
             setDrawerVisible(true);
           }}
           hitSlop={12}
@@ -272,6 +281,7 @@ export default function CalendarScreen() {
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            playSound("navigate");
             router.push({ pathname: "/day-detail", params: { date: selectedDate } });
           }}
           style={styles.detailCardInner}

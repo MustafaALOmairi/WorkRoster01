@@ -17,6 +17,7 @@ import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
 import { useNotes } from "@/lib/NotesContext";
+import { useSound } from "@/lib/SoundContext";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
@@ -34,6 +35,7 @@ export default function DayDetailSheet() {
   const { language, t } = useAppTheme();
   const { config } = useShiftConfig();
   const { getNote, setNote, deleteNote } = useNotes();
+  const { playSound } = useSound();
 
   const existingNote = date ? getNote(date) : undefined;
   const [noteText, setNoteText] = useState(existingNote?.text || "");
@@ -79,6 +81,7 @@ export default function DayDetailSheet() {
 
   const handleSaveNote = () => {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playSound("success");
     if (noteText.trim() || reminderEnabled) {
       setNote(date, {
         text: noteText.trim(),
@@ -172,6 +175,7 @@ export default function DayDetailSheet() {
               onValueChange={(val) => {
                 setReminderEnabled(val);
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                playSound("toggle");
               }}
               trackColor={{ false: colors.border, true: colors.accent }}
               thumbColor="#FFF"

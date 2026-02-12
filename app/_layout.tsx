@@ -9,6 +9,7 @@ import { queryClient } from "@/lib/query-client";
 import { ShiftProvider } from "@/lib/ShiftContext";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { NotesProvider } from "@/lib/NotesContext";
+import { SoundProvider } from "@/lib/SoundContext";
 import { useFonts, Cairo_400Regular, Cairo_600SemiBold, Cairo_700Bold } from "@expo-google-fonts/cairo";
 
 SplashScreen.preventAutoHideAsync();
@@ -63,7 +64,9 @@ export default function RootLayout() {
             <ThemeProvider>
               <ShiftProvider>
                 <NotesProvider>
-                  <RootLayoutNav />
+                  <SoundProvider>
+                    <RootLayoutNav />
+                  </SoundProvider>
                 </NotesProvider>
               </ShiftProvider>
             </ThemeProvider>

@@ -17,6 +17,7 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
+import { useSound } from "@/lib/SoundContext";
 
 export interface DrawerMenuProps {
   visible: boolean;
@@ -46,10 +47,12 @@ interface DrawerItemProps {
 }
 
 function DrawerItem({ item, colors, language, isDark, onPress }: DrawerItemProps) {
+  const { playSound } = useSound();
   const handlePress = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+    playSound("tap");
     onPress();
   };
 
@@ -103,6 +106,7 @@ export function DrawerMenu({
   language,
   isDark,
 }: DrawerMenuProps) {
+  const { playSound } = useSound();
   const translateX = useSharedValue(DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
   const isRTL = language === "ar";

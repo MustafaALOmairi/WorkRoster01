@@ -30,6 +30,7 @@ import {
   formatDate,
 } from "@/lib/shift-utils";
 import { apiRequest, getApiUrl } from "@/lib/query-client";
+import { useSound } from "@/lib/SoundContext";
 
 function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useColors> }) {
   return <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{title}</Text>;
@@ -404,6 +405,7 @@ export default function CustomizeScreen() {
     language, setCustomShiftColor, shiftColors, t,
   } = useAppTheme();
   const { config, updateConfig, addHoliday, removeHoliday } = useShiftConfig();
+  const { playSound } = useSound();
   const [colorPickerShift, setColorPickerShift] = useState<keyof ShiftColors | null>(null);
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showExportRange, setShowExportRange] = useState(false);
@@ -411,6 +413,7 @@ export default function CustomizeScreen() {
 
   const exportPDF = useCallback(async (fromDateStr: string, toDateStr: string) => {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    playSound("success");
     const startDate = parseDate(config.startDate);
     const fromDate = parseDate(fromDateStr);
     const toDate = parseDate(toDateStr);
@@ -518,7 +521,7 @@ export default function CustomizeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top + webTopInset }]}>
       <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => { playSound("navigate"); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>{t("تخصيص", "Customize")}</Text>
@@ -535,7 +538,7 @@ export default function CustomizeScreen() {
           {colorShiftLabels.map((item, idx) => (
             <Pressable
               key={item.key}
-              onPress={() => setColorPickerShift(item.key)}
+              onPress={() => { playSound("tap"); setColorPickerShift(item.key); }}
               style={[
                 styles.customColorRow,
                 idx === colorShiftLabels.length - 1 && { borderBottomWidth: 0 },
@@ -633,7 +636,7 @@ export default function CustomizeScreen() {
           <>
             <View style={{ height: 8 }} />
             <Pressable
-              onPress={shareHolidays}
+              onPress={() => { playSound("success"); shareHolidays(); }}
               disabled={sharingLoading}
               style={[styles.shareBtn, { backgroundColor: colors.surfaceSecondary, opacity: sharingLoading ? 0.6 : 1 }]}
             >
@@ -647,7 +650,7 @@ export default function CustomizeScreen() {
 
         <SectionHeader title={t("تصدير ومشاركة", "Export & Share")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          <Pressable onPress={() => setShowExportRange(true)} style={styles.exportRow}>
+          <Pressable onPress={() => { playSound("tap"); setShowExportRange(true); }} style={styles.exportRow}>
             <Text style={[styles.exportText, { color: colors.text }]}>
               {t("تصدير PDF ومشاركة", "Export PDF & Share")}
             </Text>

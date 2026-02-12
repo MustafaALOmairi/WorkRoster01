@@ -11,11 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
+import { useSound } from "@/lib/SoundContext";
 
 export default function ThemeStoreScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t, isDark } = useAppTheme();
+  const { playSound } = useSound();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
@@ -23,7 +25,7 @@ export default function ThemeStoreScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => { playSound("navigate"); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>

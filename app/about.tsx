@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
+import { useSound } from "@/lib/SoundContext";
 
 const APP_VERSION = "1.0.0";
 
@@ -20,6 +21,7 @@ export default function AboutScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t, isDark } = useAppTheme();
+  const { playSound } = useSound();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
@@ -27,7 +29,7 @@ export default function AboutScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
+        <Pressable onPress={() => { playSound("navigate"); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
@@ -81,6 +83,7 @@ export default function AboutScreen() {
         </Text>
         <Pressable
           onPress={() => {
+            playSound("tap");
             Linking.openURL("https://buymeacoffee.com");
           }}
           style={[styles.donateBtn, { backgroundColor: "#FFDD00" }]}
