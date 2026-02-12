@@ -68,7 +68,7 @@ export default function DayDetailSheet() {
   const dayName = dayFullNames[d.getDay()];
   const formattedDate = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 
-  const holiday = config.holidays.find((h) => h.date === date);
+  const holiday = config.holidays.find((h) => date >= h.startDate && date <= h.endDate);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     morning: "sunny",

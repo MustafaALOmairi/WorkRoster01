@@ -130,7 +130,12 @@ export default function CalendarScreen() {
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
   const startDate = parseDate(config.startDate);
-  const holidayDates = new Set(config.holidays.map((h) => h.date));
+  const isHolidayDate = (dateKey: string): boolean => {
+    return config.holidays.some((h) => dateKey >= h.startDate && dateKey <= h.endDate);
+  };
+  const getHolidayForDate = (dateKey: string) => {
+    return config.holidays.find((h) => dateKey >= h.startDate && dateKey <= h.endDate);
+  };
 
   const calendarDays: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
@@ -161,7 +166,7 @@ export default function CalendarScreen() {
     selEndTime = customTimes[selShift as "morning" | "evening" | "night"].end;
   }
 
-  const selHoliday = config.holidays.find((h) => h.date === selectedDate);
+  const selHoliday = getHolidayForDate(selectedDate);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     morning: "sunny",
@@ -226,7 +231,7 @@ export default function CalendarScreen() {
               const shiftType = getShiftForDate(cellDate, startDate, config.pattern);
               const dateKey = formatDate(cellDate);
               const hasNote = !!notes[dateKey]?.text;
-              const isHoliday = holidayDates.has(dateKey);
+              const isHoliday = isHolidayDate(dateKey);
               const isToday = isCurrentMonth && day === today.getDate();
               return (
                 <CalendarDayCell

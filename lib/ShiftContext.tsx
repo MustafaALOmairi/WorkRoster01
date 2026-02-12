@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ShiftType, PRESET_PATTERNS, formatDate } from "./shift-utils";
+import { ShiftType, formatDate } from "./shift-utils";
 
 export interface CustomShiftTimes {
   morning: { start: string; end: string };
@@ -11,7 +11,9 @@ export interface CustomShiftTimes {
 export interface Holiday {
   id: string;
   name: string;
-  date: string;
+  startDate: string;
+  endDate: string;
+  color: string;
 }
 
 interface ShiftConfig {
@@ -27,6 +29,7 @@ interface ShiftContextValue {
   updateConfig: (config: Partial<ShiftConfig>) => void;
   addHoliday: (holiday: Holiday) => void;
   removeHoliday: (id: string) => void;
+  isHolidayDate: (dateStr: string) => Holiday | undefined;
   isLoaded: boolean;
 }
 
@@ -38,8 +41,8 @@ const DEFAULT_SHIFT_TIMES: CustomShiftTimes = {
 
 const DEFAULT_CONFIG: ShiftConfig = {
   startDate: formatDate(new Date()),
-  pattern: PRESET_PATTERNS[0].shifts,
-  patternId: PRESET_PATTERNS[0].id,
+  pattern: ["morning"],
+  patternId: "custom",
   customShiftTimes: DEFAULT_SHIFT_TIMES,
   holidays: [],
 };
@@ -58,7 +61,17 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
-            setConfig({ ...DEFAULT_CONFIG, ...parsed });
+            const migrated = { ...DEFAULT_CONFIG, ...parsed };
+            if (parsed.holidays) {
+              migrated.holidays = parsed.holidays.map((h: any) => ({
+                id: h.id,
+                name: h.name,
+                startDate: h.startDate || h.date || formatDate(new Date()),
+                endDate: h.endDate || h.date || formatDate(new Date()),
+                color: h.color || "#FF9800",
+              }));
+            }
+            setConfig(migrated);
           } catch {}
         }
       })
@@ -89,8 +102,14 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const isHolidayDate = (dateStr: string): Holiday | undefined => {
+    return config.holidays.find((h) => {
+      return dateStr >= h.startDate && dateStr <= h.endDate;
+    });
+  };
+
   const value = useMemo(
-    () => ({ config, updateConfig, addHoliday, removeHoliday, isLoaded }),
+    () => ({ config, updateConfig, addHoliday, removeHoliday, isHolidayDate, isLoaded }),
     [config, isLoaded]
   );
 

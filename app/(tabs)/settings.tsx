@@ -16,13 +16,13 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as Clipboard from "expo-clipboard";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme, AVAILABLE_COLORS, ShiftColors } from "@/lib/ThemeContext";
 import { useShiftConfig, Holiday } from "@/lib/ShiftContext";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
-  PRESET_PATTERNS,
   MONTH_NAMES_AR,
   MONTH_NAMES_EN,
   getShiftForDate,
@@ -30,6 +30,7 @@ import {
   parseDate,
   formatDate,
 } from "@/lib/shift-utils";
+import { apiRequest, getApiUrl } from "@/lib/query-client";
 
 function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useColors> }) {
   return <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{title}</Text>;
@@ -40,11 +41,13 @@ function DatePicker({
   onChange,
   colors,
   language,
+  label,
 }: {
   value: string;
   onChange: (date: string) => void;
   colors: ReturnType<typeof useColors>;
   language: string;
+  label?: string;
 }) {
   const d = parseDate(value);
   const day = d.getDate();
@@ -60,25 +63,18 @@ function DatePicker({
 
   return (
     <View style={styles.datePickerRow}>
-      <Pressable onPress={() => adjustDay(1)} hitSlop={8}>
-        <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
-      </Pressable>
-      <Text style={[styles.datePickerValue, { color: colors.text }]}>
-        {day} {monthNames[month]} {year}
-      </Text>
-      <Pressable onPress={() => adjustDay(-1)} hitSlop={8}>
-        <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
-      </Pressable>
-    </View>
-  );
-}
-
-function PatternPreview({ pattern, colors }: { pattern: ShiftType[]; colors: ReturnType<typeof useColors> }) {
-  return (
-    <View style={styles.patternPreview}>
-      {pattern.map((shift, i) => (
-        <View key={i} style={[styles.patternDot, { backgroundColor: colors.shifts[shift].color }]} />
-      ))}
+      {label && <Text style={[styles.datePickerLabel, { color: colors.textSecondary }]}>{label}</Text>}
+      <View style={styles.datePickerControls}>
+        <Pressable onPress={() => adjustDay(-1)} hitSlop={8}>
+          <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
+        </Pressable>
+        <Text style={[styles.datePickerValue, { color: colors.text }]}>
+          {day} {monthNames[month]} {year}
+        </Text>
+        <Pressable onPress={() => adjustDay(1)} hitSlop={8}>
+          <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -287,21 +283,21 @@ function AddHolidayModal({
   language: string;
 }) {
   const [name, setName] = useState("");
-  const [dateVal, setDateVal] = useState(formatDate(new Date()));
-
-  const d = parseDate(dateVal);
-  const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
-
-  const adjustDay = (delta: number) => {
-    const newDate = new Date(d.getFullYear(), d.getMonth(), d.getDate() + delta);
-    setDateVal(formatDate(newDate));
-  };
+  const [startDateVal, setStartDateVal] = useState(formatDate(new Date()));
+  const [endDateVal, setEndDateVal] = useState(formatDate(new Date()));
+  const [holidayColor, setHolidayColor] = useState("#FF9800");
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const t = (ar: string, en: string) => language === "ar" ? ar : en;
 
   const handleAdd = () => {
     if (!name.trim()) return;
+    const finalEnd = endDateVal < startDateVal ? startDateVal : endDateVal;
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    onAdd({ id, name: name.trim(), date: dateVal });
+    onAdd({ id, name: name.trim(), startDate: startDateVal, endDate: finalEnd, color: holidayColor });
     setName("");
+    setStartDateVal(formatDate(new Date()));
+    setEndDateVal(formatDate(new Date()));
+    setHolidayColor("#FF9800");
     onClose();
   };
 
@@ -310,31 +306,190 @@ function AddHolidayModal({
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={() => {}}>
           <Text style={[styles.modalTitle, { color: colors.text }]}>
-            {language === "ar" ? "إضافة إجازة" : "Add Holiday"}
+            {t("إضافة إجازة", "Add Holiday")}
           </Text>
           <TextInput
             style={[styles.holidayInput, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
             value={name}
             onChangeText={setName}
-            placeholder={language === "ar" ? "اسم الإجازة..." : "Holiday name..."}
+            placeholder={t("اسم الإجازة...", "Holiday name...")}
             placeholderTextColor={colors.textSecondary}
             textAlign={language === "ar" ? "right" : "left"}
           />
-          <View style={styles.holidayDateRow}>
-            <Pressable onPress={() => adjustDay(-1)} hitSlop={8}>
-              <Ionicons name="remove-circle-outline" size={24} color={colors.accent} />
-            </Pressable>
-            <Text style={[styles.holidayDateText, { color: colors.text }]}>
-              {d.getDate()} {monthNames[d.getMonth()]} {d.getFullYear()}
+
+          <DatePicker value={startDateVal} onChange={setStartDateVal} colors={colors} language={language} label={t("من", "From")} />
+          <DatePicker value={endDateVal} onChange={setEndDateVal} colors={colors} language={language} label={t("إلى", "To")} />
+
+          <View style={styles.holidayColorSection}>
+            <Text style={[styles.holidayColorLabel, { color: colors.textSecondary }]}>
+              {t("اللون", "Color")}
             </Text>
-            <Pressable onPress={() => adjustDay(1)} hitSlop={8}>
-              <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+            <Pressable onPress={() => setShowColorPicker(!showColorPicker)} style={[styles.holidayColorBtn, { borderColor: colors.border }]}>
+              <View style={[styles.holidayColorSwatch, { backgroundColor: holidayColor }]} />
+              <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
             </Pressable>
           </View>
+          {showColorPicker && (
+            <View style={styles.colorGrid}>
+              {AVAILABLE_COLORS.map((c) => (
+                <Pressable
+                  key={c}
+                  onPress={() => { setHolidayColor(c); setShowColorPicker(false); }}
+                  style={[styles.colorGridItem, { backgroundColor: c }, holidayColor === c && styles.colorGridItemActive]}
+                >
+                  {holidayColor === c && <Ionicons name="checkmark" size={16} color="#FFF" />}
+                </Pressable>
+              ))}
+            </View>
+          )}
+
           <Pressable onPress={handleAdd} style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}>
             <Ionicons name="checkmark" size={18} color="#FFF" />
+            <Text style={styles.holidayAddBtnText}>{t("إضافة", "Add")}</Text>
+          </Pressable>
+          <Pressable onPress={onClose} style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceSecondary }]}>
+            <Ionicons name="close" size={20} color={colors.text} />
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function ExportDateRangeModal({
+  visible,
+  onClose,
+  onExport,
+  colors,
+  language,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onExport: (from: string, to: string) => void;
+  colors: ReturnType<typeof useColors>;
+  language: string;
+}) {
+  const now = new Date();
+  const yearStart = formatDate(new Date(now.getFullYear(), 0, 1));
+  const yearEnd = formatDate(new Date(now.getFullYear(), 11, 31));
+  const [fromDate, setFromDate] = useState(yearStart);
+  const [toDate, setToDate] = useState(yearEnd);
+  const t = (ar: string, en: string) => language === "ar" ? ar : en;
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={() => {}}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>
+            {t("تحديد فترة التصدير", "Select Export Range")}
+          </Text>
+          <DatePicker value={fromDate} onChange={setFromDate} colors={colors} language={language} label={t("من", "From")} />
+          <DatePicker value={toDate} onChange={setToDate} colors={colors} language={language} label={t("إلى", "To")} />
+          <Pressable
+            onPress={() => { onExport(fromDate, toDate); onClose(); }}
+            style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}
+          >
+            <Ionicons name="download-outline" size={18} color="#FFF" />
+            <Text style={styles.holidayAddBtnText}>{t("تصدير PDF", "Export PDF")}</Text>
+          </Pressable>
+          <Pressable onPress={onClose} style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceSecondary }]}>
+            <Ionicons name="close" size={20} color={colors.text} />
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function ImportHolidayModal({
+  visible,
+  onClose,
+  holidays,
+  onImport,
+  colors,
+  language,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  holidays: Array<{ name: string; startDate: string; endDate: string; color: string }>;
+  onImport: (holidays: Holiday[]) => void;
+  colors: ReturnType<typeof useColors>;
+  language: string;
+}) {
+  const [editableHolidays, setEditableHolidays] = useState(
+    holidays.map((h) => ({ ...h, id: Date.now().toString() + Math.random().toString(36).substr(2, 9) }))
+  );
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editColorIdx, setEditColorIdx] = useState<number | null>(null);
+  const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
+  const t = (ar: string, en: string) => language === "ar" ? ar : en;
+
+  const formatDisplayDate = (dateStr: string) => {
+    const d = parseDate(dateStr);
+    return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const updateHoliday = (idx: number, field: string, value: string) => {
+    setEditableHolidays((prev) => prev.map((h, i) => i === idx ? { ...h, [field]: value } : h));
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <Pressable style={styles.modalOverlay} onPress={onClose}>
+        <Pressable style={[styles.modalContent, { backgroundColor: colors.surface, maxHeight: "80%" }]} onPress={() => {}}>
+          <Text style={[styles.modalTitle, { color: colors.text }]}>
+            {t("إجازات مشتركة", "Shared Holidays")}
+          </Text>
+          <Text style={[styles.importSubtitle, { color: colors.textSecondary }]}>
+            {t("يمكنك تعديل الاسم واللون قبل الإضافة", "You can edit name and color before adding")}
+          </Text>
+          <ScrollView style={styles.importList} showsVerticalScrollIndicator={false}>
+            {editableHolidays.map((h, idx) => (
+              <View key={idx} style={[styles.importItem, { backgroundColor: colors.surfaceSecondary }]}>
+                <View style={styles.importItemHeader}>
+                  <Pressable onPress={() => setEditColorIdx(editColorIdx === idx ? null : idx)} style={[styles.importColorDot, { backgroundColor: h.color }]} />
+                  {editingIdx === idx ? (
+                    <TextInput
+                      style={[styles.importNameInput, { color: colors.text, borderColor: colors.border }]}
+                      value={h.name}
+                      onChangeText={(v) => updateHoliday(idx, "name", v)}
+                      autoFocus
+                      onBlur={() => setEditingIdx(null)}
+                    />
+                  ) : (
+                    <Pressable onPress={() => setEditingIdx(idx)} style={styles.importNameWrap}>
+                      <Text style={[styles.importName, { color: colors.text }]}>{h.name}</Text>
+                      <Ionicons name="pencil" size={14} color={colors.textSecondary} />
+                    </Pressable>
+                  )}
+                </View>
+                {editColorIdx === idx && (
+                  <View style={[styles.colorGrid, { marginTop: 8 }]}>
+                    {AVAILABLE_COLORS.slice(0, 16).map((c) => (
+                      <Pressable
+                        key={c}
+                        onPress={() => { updateHoliday(idx, "color", c); setEditColorIdx(null); }}
+                        style={[styles.colorGridItemSmall, { backgroundColor: c }, h.color === c && styles.colorGridItemActive]}
+                      >
+                        {h.color === c && <Ionicons name="checkmark" size={12} color="#FFF" />}
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+                <Text style={[styles.importDate, { color: colors.textSecondary }]}>
+                  {formatDisplayDate(h.startDate)}
+                  {h.startDate !== h.endDate ? ` → ${formatDisplayDate(h.endDate)}` : ""}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+          <Pressable
+            onPress={() => { onImport(editableHolidays); onClose(); }}
+            style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}
+          >
+            <Ionicons name="add-circle-outline" size={18} color="#FFF" />
             <Text style={styles.holidayAddBtnText}>
-              {language === "ar" ? "إضافة" : "Add"}
+              {t("إضافة الكل", "Add All")}
             </Text>
           </Pressable>
           <Pressable onPress={onClose} style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceSecondary }]}>
@@ -351,54 +506,41 @@ export default function SettingsScreen() {
   const colors = useColors();
   const {
     language, theme, setLanguage, setTheme,
-    colorPresetIndex, colorPresets, setColorPreset,
     setCustomShiftColor, shiftColors,
     t,
   } = useAppTheme();
   const { config, updateConfig, addHoliday, removeHoliday } = useShiftConfig();
-  const [showCustom, setShowCustom] = useState(config.patternId === "custom");
   const [colorPickerShift, setColorPickerShift] = useState<keyof ShiftColors | null>(null);
   const [showAddHoliday, setShowAddHoliday] = useState(false);
+  const [showExportRange, setShowExportRange] = useState(false);
+  const [importHolidays, setImportHolidays] = useState<Array<{ name: string; startDate: string; endDate: string; color: string }> | null>(null);
+  const [sharingLoading, setSharingLoading] = useState(false);
 
-  const selectPreset = useCallback(
-    (preset: (typeof PRESET_PATTERNS)[0]) => {
-      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      updateConfig({ pattern: preset.shifts, patternId: preset.id });
-      setShowCustom(false);
-    },
-    [updateConfig]
-  );
-
-  const enableCustom = useCallback(() => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    updateConfig({ patternId: "custom", pattern: ["morning"] });
-    setShowCustom(true);
-  }, [updateConfig]);
-
-  const exportPDF = useCallback(async () => {
+  const exportPDF = useCallback(async (fromDateStr: string, toDateStr: string) => {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const startDate = parseDate(config.startDate);
-    const now = new Date();
-    const year = now.getFullYear();
+    const fromDate = parseDate(fromDateStr);
+    const toDate = parseDate(toDateStr);
     const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
     const times = config.customShiftTimes;
+
     let tableRows = "";
-    for (let m = 0; m < 12; m++) {
-      const days = getDaysInMonth(year, m);
-      for (let d = 1; d <= days; d++) {
-        const date = new Date(year, m, d);
-        const shift = getShiftForDate(date, startDate, config.pattern);
-        const def = SHIFT_DEFINITIONS[shift];
-        const color = colors.shifts[shift].color;
-        const label = language === "ar" ? def.labelAr : def.label;
-        const st = shift === "rest" ? "-" : (times[shift as "morning"|"evening"|"night"]?.start || def.startTime || "-");
-        const et = shift === "rest" ? "-" : (times[shift as "morning"|"evening"|"night"]?.end || def.endTime || "-");
-        tableRows += `<tr><td>${d} ${monthNames[m]} ${year}</td><td style="color:${color};font-weight:bold">${label}</td><td>${st}</td><td>${et}</td></tr>`;
-      }
+    const current = new Date(fromDate);
+    while (current <= toDate) {
+      const shift = getShiftForDate(current, startDate, config.pattern);
+      const def = SHIFT_DEFINITIONS[shift];
+      const color = colors.shifts[shift].color;
+      const label = language === "ar" ? def.labelAr : def.label;
+      const st = shift === "rest" ? "-" : (times[shift as "morning"|"evening"|"night"]?.start || def.startTime || "-");
+      const et = shift === "rest" ? "-" : (times[shift as "morning"|"evening"|"night"]?.end || def.endTime || "-");
+      const dayStr = `${current.getDate()} ${monthNames[current.getMonth()]} ${current.getFullYear()}`;
+      tableRows += `<tr><td>${dayStr}</td><td style="color:${color};font-weight:bold">${label}</td><td>${st}</td><td>${et}</td></tr>`;
+      current.setDate(current.getDate() + 1);
     }
+
     const dir = language === "ar" ? "rtl" : "ltr";
     const align = language === "ar" ? "right" : "left";
-    const titleText = language === "ar" ? `جدول الشفتات ${year}` : `Shift Schedule ${year}`;
+    const titleText = language === "ar" ? "جدول الشفتات" : "Shift Schedule";
     const headers = language === "ar"
       ? "<th>التاريخ</th><th>الشفت</th><th>البداية</th><th>النهاية</th>"
       : "<th>Date</th><th>Shift</th><th>Start</th><th>End</th>";
@@ -416,6 +558,45 @@ export default function SettingsScreen() {
     }
   }, [config, language, colors]);
 
+  const shareHolidays = useCallback(async () => {
+    if (config.holidays.length === 0) {
+      Alert.alert(t("لا توجد إجازات", "No Holidays"), t("أضف إجازات أولاً لمشاركتها", "Add holidays first to share them"));
+      return;
+    }
+    setSharingLoading(true);
+    try {
+      const payload = config.holidays.map((h) => ({
+        name: h.name,
+        startDate: h.startDate,
+        endDate: h.endDate,
+        color: h.color,
+      }));
+      const res = await apiRequest("POST", "/api/holidays/share", { holidays: payload });
+      const data = await res.json();
+      const baseUrl = getApiUrl();
+      const shareUrl = `${baseUrl}import-holidays/${data.id}`;
+      try {
+        await Clipboard.setStringAsync(shareUrl);
+        Alert.alert(
+          t("تم النسخ", "Link Copied"),
+          t("تم نسخ رابط الإجازات. شاركه مع زملائك", "Holiday link copied. Share it with your colleagues")
+        );
+      } catch {
+        Alert.alert(t("رابط المشاركة", "Share Link"), shareUrl);
+      }
+    } catch {
+      Alert.alert(t("خطأ", "Error"), t("حدث خطأ أثناء المشاركة", "Sharing failed"));
+    } finally {
+      setSharingLoading(false);
+    }
+  }, [config.holidays, language]);
+
+  const handleImportAll = useCallback((holidays: Holiday[]) => {
+    holidays.forEach((h) => addHoliday(h));
+    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert(t("تمت الإضافة", "Added"), t("تمت إضافة الإجازات بنجاح", "Holidays added successfully"));
+  }, [addHoliday, language]);
+
   const updateShiftTime = (shift: "morning" | "evening" | "night", field: "start" | "end", value: string) => {
     const current = config.customShiftTimes;
     updateConfig({
@@ -427,6 +608,7 @@ export default function SettingsScreen() {
   };
 
   const webTopInset = Platform.OS === "web" ? 67 : 0;
+  const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
 
   const shiftTimesArr: { key: "morning" | "evening" | "night"; labelAr: string; labelEn: string }[] = [
     { key: "morning", labelAr: "صباحي", labelEn: "Morning" },
@@ -440,6 +622,11 @@ export default function SettingsScreen() {
     { key: "night", labelAr: "ليلي", labelEn: "Night" },
     { key: "rest", labelAr: "راحة", labelEn: "Rest" },
   ];
+
+  const formatDisplayDate = (dateStr: string) => {
+    const d = parseDate(dateStr);
+    return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top + webTopInset }]}>
@@ -492,32 +679,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <SectionHeader title={t("ألوان الشفتات", "Shift Colors")} colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          {colorPresets.map((preset, idx) => (
-            <Pressable
-              key={idx}
-              onPress={() => { setColorPreset(idx); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              style={[
-                styles.colorPresetRow,
-                colorPresetIndex === idx && { backgroundColor: colors.surfaceTertiary },
-              ]}
-            >
-              <Text style={[styles.colorPresetName, { color: colors.text }]}>
-                {language === "ar" ? preset.nameAr : preset.name}
-              </Text>
-              <View style={styles.colorPresetDots}>
-                <View style={[styles.colorDot, { backgroundColor: preset.colors.morning }]} />
-                <View style={[styles.colorDot, { backgroundColor: preset.colors.evening }]} />
-                <View style={[styles.colorDot, { backgroundColor: preset.colors.night }]} />
-                <View style={[styles.colorDot, { backgroundColor: preset.colors.rest }]} />
-                {colorPresetIndex === idx && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-              </View>
-            </Pressable>
-          ))}
-        </View>
-
-        <SectionHeader title={t("تخصيص الألوان يدوياً", "Custom Colors")} colors={colors} />
+        <SectionHeader title={t("تخصيص الألوان", "Customize Colors")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
           {colorShiftLabels.map((item, idx) => (
             <Pressable
@@ -567,52 +729,13 @@ export default function SettingsScreen() {
 
         <SectionHeader title={t("نظام الدوام", "Rotation System")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          {PRESET_PATTERNS.map((preset) => (
-            <Pressable
-              key={preset.id}
-              onPress={() => selectPreset(preset)}
-              style={[
-                styles.presetRow,
-                config.patternId === preset.id && { backgroundColor: colors.surfaceTertiary },
-              ]}
-            >
-              <View style={styles.presetInfo}>
-                <Text style={[styles.presetName, { color: colors.text }]}>
-                  {language === "ar" ? preset.nameAr : preset.name}
-                </Text>
-                <PatternPreview pattern={preset.shifts} colors={colors} />
-              </View>
-              {config.patternId === preset.id && <Ionicons name="checkmark-circle" size={22} color={colors.accent} />}
-            </Pressable>
-          ))}
-          <Pressable
-            onPress={enableCustom}
-            style={[
-              styles.presetRow,
-              { borderBottomWidth: 0 },
-              showCustom && { backgroundColor: colors.surfaceTertiary },
-            ]}
-          >
-            <View style={styles.presetInfo}>
-              <Text style={[styles.presetName, { color: colors.text }]}>{t("مخصص", "Custom")}</Text>
-            </View>
-            {showCustom && <Ionicons name="checkmark-circle" size={22} color={colors.accent} />}
-          </Pressable>
+          <CustomPatternEditor
+            pattern={config.pattern}
+            onChange={(p) => updateConfig({ pattern: p, patternId: "custom" })}
+            colors={colors}
+            language={language}
+          />
         </View>
-
-        {showCustom && (
-          <>
-            <SectionHeader title={t("تعديل النمط المخصص", "Edit Custom Pattern")} colors={colors} />
-            <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-              <CustomPatternEditor
-                pattern={config.pattern}
-                onChange={(p) => updateConfig({ pattern: p })}
-                colors={colors}
-                language={language}
-              />
-            </View>
-          </>
-        )}
 
         <SectionHeader title={t("الإجازات الإضافية", "Extra Holidays")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
@@ -621,29 +744,29 @@ export default function SettingsScreen() {
               {t("لا توجد إجازات مضافة", "No holidays added")}
             </Text>
           )}
-          {config.holidays.map((h) => {
-            const hd = parseDate(h.date);
-            const monthN = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
-            return (
-              <View key={h.id} style={[styles.holidayRow, { borderBottomColor: colors.border }]}>
-                <View style={styles.holidayInfo}>
+          {config.holidays.map((h) => (
+            <View key={h.id} style={[styles.holidayRow, { borderBottomColor: colors.border }]}>
+              <View style={styles.holidayInfo}>
+                <View style={styles.holidayNameRow}>
+                  <View style={[styles.holidayDot, { backgroundColor: h.color }]} />
                   <Text style={[styles.holidayName, { color: colors.text }]}>{h.name}</Text>
-                  <Text style={[styles.holidayDate, { color: colors.textSecondary }]}>
-                    {hd.getDate()} {monthN[hd.getMonth()]} {hd.getFullYear()}
-                  </Text>
                 </View>
-                <Pressable
-                  onPress={() => {
-                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    removeHoliday(h.id);
-                  }}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#E53935" />
-                </Pressable>
+                <Text style={[styles.holidayDate, { color: colors.textSecondary }]}>
+                  {formatDisplayDate(h.startDate)}
+                  {h.startDate !== h.endDate ? ` → ${formatDisplayDate(h.endDate)}` : ""}
+                </Text>
               </View>
-            );
-          })}
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  removeHoliday(h.id);
+                }}
+                hitSlop={8}
+              >
+                <Ionicons name="trash-outline" size={20} color="#E53935" />
+              </Pressable>
+            </View>
+          ))}
           <Pressable
             onPress={() => setShowAddHoliday(true)}
             style={[styles.addHolidayBtn, { borderColor: colors.accent }]}
@@ -655,9 +778,25 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        {config.holidays.length > 0 && (
+          <>
+            <View style={{ height: 8 }} />
+            <Pressable
+              onPress={shareHolidays}
+              disabled={sharingLoading}
+              style={[styles.shareBtn, { backgroundColor: colors.surfaceSecondary, opacity: sharingLoading ? 0.6 : 1 }]}
+            >
+              <Ionicons name="link-outline" size={20} color={colors.accent} />
+              <Text style={[styles.shareBtnText, { color: colors.accent }]}>
+                {sharingLoading ? t("جاري المشاركة...", "Sharing...") : t("مشاركة الإجازات كرابط", "Share Holidays as Link")}
+              </Text>
+            </Pressable>
+          </>
+        )}
+
         <SectionHeader title={t("تصدير ومشاركة", "Export & Share")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          <Pressable onPress={exportPDF} style={styles.exportRow}>
+          <Pressable onPress={() => setShowExportRange(true)} style={styles.exportRow}>
             <Text style={[styles.exportText, { color: colors.text }]}>
               {t("تصدير PDF ومشاركة", "Export PDF & Share")}
             </Text>
@@ -707,6 +846,25 @@ export default function SettingsScreen() {
         colors={colors}
         language={language}
       />
+
+      <ExportDateRangeModal
+        visible={showExportRange}
+        onClose={() => setShowExportRange(false)}
+        onExport={exportPDF}
+        colors={colors}
+        language={language}
+      />
+
+      {importHolidays && (
+        <ImportHolidayModal
+          visible={true}
+          onClose={() => setImportHolidays(null)}
+          holidays={importHolidays}
+          onImport={handleImportAll}
+          colors={colors}
+          language={language}
+        />
+      )}
     </View>
   );
 }
@@ -751,29 +909,6 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_600SemiBold",
     fontSize: 14,
     color: "#555",
-  },
-  colorPresetRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
-  colorPresetName: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-  },
-  colorPresetDots: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  colorDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
   },
   customColorRow: {
     flexDirection: "row",
@@ -829,37 +964,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   datePickerRow: {
+    alignItems: "center",
+    padding: 12,
+    gap: 4,
+  },
+  datePickerLabel: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 12,
+  },
+  datePickerControls: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
+    width: "100%",
   },
   datePickerValue: {
     fontFamily: "Cairo_700Bold",
-    fontSize: 18,
-  },
-  presetRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
-  presetInfo: { gap: 6 },
-  presetName: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 15,
-  },
-  patternPreview: {
-    flexDirection: "row",
-    gap: 4,
-  },
-  patternDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    fontSize: 16,
   },
   customEditor: { padding: 16, gap: 12 },
   firstDayLabel: {
@@ -931,6 +1052,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   holidayInfo: { gap: 2, flex: 1 },
+  holidayNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  holidayDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
   holidayName: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 14,
@@ -938,6 +1069,7 @@ const styles = StyleSheet.create({
   holidayDate: {
     fontFamily: "Cairo_400Regular",
     fontSize: 12,
+    marginLeft: 18,
   },
   addHolidayBtn: {
     flexDirection: "row",
@@ -953,6 +1085,19 @@ const styles = StyleSheet.create({
   addHolidayBtnText: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 13,
+  },
+  shareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  shareBtnText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
   },
   exportRow: {
     flexDirection: "row",
@@ -1006,7 +1151,7 @@ const styles = StyleSheet.create({
     maxWidth: 360,
     borderRadius: 20,
     padding: 24,
-    gap: 16,
+    gap: 12,
     alignItems: "center",
   },
   modalTitle: {
@@ -1023,6 +1168,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  colorGridItemSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1051,14 +1203,30 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  holidayDateRow: {
+  holidayColorSection: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 4,
   },
-  holidayDateText: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 16,
+  holidayColorLabel: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 13,
+  },
+  holidayColorBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  holidayColorSwatch: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   holidayAddBtn: {
     flexDirection: "row",
@@ -1073,5 +1241,54 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     fontSize: 14,
     color: "#FFF",
+  },
+  importSubtitle: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 12,
+    textAlign: "center",
+  },
+  importList: {
+    width: "100%",
+    maxHeight: 300,
+  },
+  importItem: {
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    gap: 6,
+  },
+  importItemHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  importColorDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  importNameInput: {
+    flex: 1,
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  importNameWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  importName: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+  },
+  importDate: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 12,
+    marginLeft: 34,
   },
 });

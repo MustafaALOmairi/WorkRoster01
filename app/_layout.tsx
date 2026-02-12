@@ -26,6 +26,13 @@ function RootLayoutNav() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="import-holidays/[id]"
+        options={{
+          headerShown: false,
+          presentation: "modal",
+        }}
+      />
     </Stack>
   );
 }

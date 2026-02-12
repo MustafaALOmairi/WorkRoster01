@@ -177,6 +177,15 @@ function configureExpoAndLanding(app: express.Application) {
       return next();
     }
 
+    if (req.path.startsWith("/import-holidays/")) {
+      return serveLandingPage({
+        req,
+        res,
+        landingPageTemplate,
+        appName,
+      });
+    }
+
     if (req.path !== "/" && req.path !== "/manifest") {
       return next();
     }
