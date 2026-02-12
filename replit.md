@@ -58,4 +58,5 @@ Preferred communication style: Simple, everyday language.
 - **Expo Services**: Standard Expo managed workflow services (OTA updates, build service compatibility)
 - **Google Fonts**: Cairo font family loaded via `@expo-google-fonts/cairo`
 - **TanStack React Query**: Set up with a custom query client (`lib/query-client.ts`) that points to the Express API server. Currently unused but ready for server-side data fetching
-- **No external APIs or third-party services** are currently integrated beyond the Expo ecosystem
+- **OpenAI (via Replit AI Integrations)**: Used for AI-powered theme generation in the Theme Store. The backend endpoint `POST /api/generate-theme` calls `gpt-4o-mini` to generate cohesive color themes from user descriptions. Uses `AI_INTEGRATIONS_OPENAI_API_KEY` and `AI_INTEGRATIONS_OPENAI_BASE_URL` environment variables (auto-managed by Replit)
+- **Theme Store**: Features 3 pre-made themes (Minimalist White, Purple Dream, Bold Classic) plus AI-generated themes. AI themes are saved locally via AsyncStorage (up to 10). Full-app themes control accent color, shift colors, theme mode, surfaces, text colors, and borders. `StoreTheme` interface in `lib/ThemeContext.tsx`
