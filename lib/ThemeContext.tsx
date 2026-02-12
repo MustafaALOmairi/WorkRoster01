@@ -26,6 +26,78 @@ const COLOR_PRESETS: { name: string; nameAr: string; colors: ShiftColors }[] = [
   { name: "Neon", nameAr: "نيون", colors: { morning: "#FF6D00", evening: "#D500F9", night: "#304FFE", rest: "#00C853" } },
 ];
 
+export interface StoreTheme {
+  id: string;
+  name: string;
+  nameAr: string;
+  description: string;
+  descriptionAr: string;
+  mode: ThemeMode;
+  accent: string;
+  shiftColors: ShiftColors;
+  headerBg: string;
+  dayHeaderBg: string;
+  surfaceBg: string;
+  cardBg: string;
+  textColor: string;
+  textSecondary: string;
+  borderColor: string;
+}
+
+export const STORE_THEMES: StoreTheme[] = [
+  {
+    id: "minimalist_white",
+    name: "Minimalist White",
+    nameAr: "أبيض بسيط",
+    description: "Clean, elegant calendar with soft grays",
+    descriptionAr: "تقويم نظيف وأنيق بألوان رمادية ناعمة",
+    mode: "light",
+    accent: "#9E9E9E",
+    shiftColors: { morning: "#78909C", evening: "#90A4AE", night: "#546E7A", rest: "#B0BEC5" },
+    headerBg: "#FFFFFF",
+    dayHeaderBg: "#EEEEEE",
+    surfaceBg: "#FAFAFA",
+    cardBg: "#F5F5F5",
+    textColor: "#212121",
+    textSecondary: "#757575",
+    borderColor: "#E0E0E0",
+  },
+  {
+    id: "purple_dream",
+    name: "Purple Dream",
+    nameAr: "حلم بنفسجي",
+    description: "Lavender and pink aesthetic vibes",
+    descriptionAr: "أجواء جمالية بالبنفسجي والوردي",
+    mode: "light",
+    accent: "#AB47BC",
+    shiftColors: { morning: "#CE93D8", evening: "#F48FB1", night: "#7E57C2", rest: "#BA68C8" },
+    headerBg: "#F3E5F5",
+    dayHeaderBg: "#E1BEE7",
+    surfaceBg: "#FCF0FF",
+    cardBg: "#F3E5F5",
+    textColor: "#4A148C",
+    textSecondary: "#7B1FA2",
+    borderColor: "#E1BEE7",
+  },
+  {
+    id: "bold_classic",
+    name: "Bold Classic",
+    nameAr: "كلاسيكي جريء",
+    description: "Strong black & white with sharp contrast",
+    descriptionAr: "أسود وأبيض قوي بتباين حاد",
+    mode: "light",
+    accent: "#212121",
+    shiftColors: { morning: "#FF6F00", evening: "#C62828", night: "#1A237E", rest: "#2E7D32" },
+    headerBg: "#212121",
+    dayHeaderBg: "#EEEEEE",
+    surfaceBg: "#FFFFFF",
+    cardBg: "#FAFAFA",
+    textColor: "#212121",
+    textSecondary: "#616161",
+    borderColor: "#BDBDBD",
+  },
+];
+
 export const AVAILABLE_COLORS = [
   "#E67E22", "#E74C8B", "#3F51B5", "#43A047",
   "#FF6D00", "#D500F9", "#304FFE", "#00C853",
@@ -42,6 +114,8 @@ interface AppPrefs {
   language: Language;
   shiftColors: ShiftColors;
   colorPresetIndex: number;
+  storeThemeId: string | null;
+  accent: string;
 }
 
 interface ThemeContextValue {
@@ -50,10 +124,13 @@ interface ThemeContextValue {
   shiftColors: ShiftColors;
   colorPresetIndex: number;
   colorPresets: typeof COLOR_PRESETS;
+  storeThemeId: string | null;
+  accent: string;
   setTheme: (t: ThemeMode) => void;
   setLanguage: (l: Language) => void;
   setColorPreset: (index: number) => void;
   setCustomShiftColor: (shift: keyof ShiftColors, color: string) => void;
+  applyStoreTheme: (themeId: string | null) => void;
   t: (ar: string, en: string) => string;
   isLoaded: boolean;
   isDark: boolean;
@@ -64,6 +141,8 @@ const DEFAULT_PREFS: AppPrefs = {
   language: "ar",
   shiftColors: DEFAULT_SHIFT_COLORS,
   colorPresetIndex: 0,
+  storeThemeId: null,
+  accent: "#F5A623",
 };
 
 const STORAGE_KEY = "@shift_calendar_prefs";
@@ -102,6 +181,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       shiftColors: prefs.shiftColors,
       colorPresetIndex: prefs.colorPresetIndex,
       colorPresets: COLOR_PRESETS,
+      storeThemeId: prefs.storeThemeId,
+      accent: prefs.accent,
       isDark: prefs.theme === "dark",
       isLoaded,
       setTheme: (t) => updatePrefs({ theme: t }),
@@ -109,14 +190,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setColorPreset: (index) => {
         const preset = COLOR_PRESETS[index];
         if (preset) {
-          updatePrefs({ colorPresetIndex: index, shiftColors: preset.colors });
+          updatePrefs({ colorPresetIndex: index, shiftColors: preset.colors, storeThemeId: null, accent: "#F5A623" });
         }
       },
       setCustomShiftColor: (shift, color) => {
         updatePrefs({
           shiftColors: { ...prefs.shiftColors, [shift]: color },
           colorPresetIndex: -1,
+          storeThemeId: null,
         });
+      },
+      applyStoreTheme: (themeId) => {
+        if (!themeId) {
+          updatePrefs({ storeThemeId: null, accent: "#F5A623", shiftColors: DEFAULT_SHIFT_COLORS, colorPresetIndex: 0, theme: "light" });
+          return;
+        }
+        const storeTheme = STORE_THEMES.find((t) => t.id === themeId);
+        if (storeTheme) {
+          updatePrefs({
+            storeThemeId: themeId,
+            accent: storeTheme.accent,
+            shiftColors: storeTheme.shiftColors,
+            colorPresetIndex: -1,
+            theme: storeTheme.mode,
+          });
+        }
       },
       t: (ar, en) => (prefs.language === "ar" ? ar : en),
     }),
