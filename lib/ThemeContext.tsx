@@ -126,11 +126,14 @@ interface ThemeContextValue {
   colorPresets: typeof COLOR_PRESETS;
   storeThemeId: string | null;
   accent: string;
+  aiGeneratedThemes: StoreTheme[];
   setTheme: (t: ThemeMode) => void;
   setLanguage: (l: Language) => void;
   setColorPreset: (index: number) => void;
   setCustomShiftColor: (shift: keyof ShiftColors, color: string) => void;
   applyStoreTheme: (themeId: string | null) => void;
+  addAiTheme: (theme: StoreTheme) => void;
+  removeAiTheme: (themeId: string) => void;
   t: (ar: string, en: string) => string;
   isLoaded: boolean;
   isDark: boolean;
@@ -146,20 +149,30 @@ const DEFAULT_PREFS: AppPrefs = {
 };
 
 const STORAGE_KEY = "@shift_calendar_prefs";
+const AI_THEMES_KEY = "@shift_calendar_ai_themes";
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<AppPrefs>(DEFAULT_PREFS);
+  const [aiGeneratedThemes, setAiGeneratedThemes] = useState<StoreTheme[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then((stored) => {
+    Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY),
+      AsyncStorage.getItem(AI_THEMES_KEY),
+    ])
+      .then(([stored, storedAi]) => {
         if (stored) {
           try {
             const parsed = JSON.parse(stored);
             setPrefs({ ...DEFAULT_PREFS, ...parsed });
+          } catch {}
+        }
+        if (storedAi) {
+          try {
+            setAiGeneratedThemes(JSON.parse(storedAi));
           } catch {}
         }
       })
@@ -183,6 +196,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       colorPresets: COLOR_PRESETS,
       storeThemeId: prefs.storeThemeId,
       accent: prefs.accent,
+      aiGeneratedThemes,
       isDark: prefs.theme === "dark",
       isLoaded,
       setTheme: (t) => updatePrefs({ theme: t }),
@@ -205,7 +219,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           updatePrefs({ storeThemeId: null, accent: "#F5A623", shiftColors: DEFAULT_SHIFT_COLORS, colorPresetIndex: 0, theme: "light" });
           return;
         }
-        const storeTheme = STORE_THEMES.find((t) => t.id === themeId);
+        const allThemes = [...STORE_THEMES, ...aiGeneratedThemes];
+        const storeTheme = allThemes.find((t) => t.id === themeId);
         if (storeTheme) {
           updatePrefs({
             storeThemeId: themeId,
@@ -216,9 +231,26 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           });
         }
       },
+      addAiTheme: (theme) => {
+        setAiGeneratedThemes((prev) => {
+          const next = [theme, ...prev].slice(0, 10);
+          AsyncStorage.setItem(AI_THEMES_KEY, JSON.stringify(next));
+          return next;
+        });
+      },
+      removeAiTheme: (themeId) => {
+        setAiGeneratedThemes((prev) => {
+          const next = prev.filter((t) => t.id !== themeId);
+          AsyncStorage.setItem(AI_THEMES_KEY, JSON.stringify(next));
+          return next;
+        });
+        if (prefs.storeThemeId === themeId) {
+          updatePrefs({ storeThemeId: null, accent: "#F5A623", shiftColors: DEFAULT_SHIFT_COLORS, colorPresetIndex: 0, theme: "light" });
+        }
+      },
       t: (ar, en) => (prefs.language === "ar" ? ar : en),
     }),
-    [prefs, isLoaded]
+    [prefs, isLoaded, aiGeneratedThemes]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

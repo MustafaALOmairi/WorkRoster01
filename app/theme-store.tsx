@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -6,6 +6,9 @@ import {
   Pressable,
   Platform,
   ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -13,6 +16,7 @@ import { router } from "expo-router";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme, STORE_THEMES, StoreTheme } from "@/lib/ThemeContext";
 import { useSound } from "@/lib/SoundContext";
+import { apiRequest } from "@/lib/query-client";
 import * as Haptics from "expo-haptics";
 
 const MINI_DAYS = [
@@ -127,14 +131,27 @@ function ThemeCard({
   );
 }
 
+const AI_SUGGESTIONS = [
+  { en: "Ocean sunset", ar: "غروب المحيط" },
+  { en: "Cherry blossom", ar: "أزهار الكرز" },
+  { en: "Northern lights", ar: "الشفق القطبي" },
+  { en: "Desert sand", ar: "رمال الصحراء" },
+  { en: "Midnight city", ar: "مدينة منتصف الليل" },
+  { en: "Forest morning", ar: "صباح الغابة" },
+];
+
 export default function ThemeStoreScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { t, isDark, language, storeThemeId, applyStoreTheme } = useAppTheme();
+  const { t, isDark, language, storeThemeId, applyStoreTheme, aiGeneratedThemes, addAiTheme, removeAiTheme } = useAppTheme();
   const { playSound } = useSound();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const webBottomInset = Platform.OS === "web" ? 34 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
+
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedPreview, setGeneratedPreview] = useState<StoreTheme | null>(null);
 
   const handleApply = (themeId: string) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -145,6 +162,67 @@ export default function ThemeStoreScreen() {
       playSound("success");
       applyStoreTheme(themeId);
     }
+  };
+
+  const handleGenerate = async (prompt?: string) => {
+    const desc = prompt || aiPrompt.trim();
+    if (!desc || isGenerating) return;
+
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSound("navigate");
+    setIsGenerating(true);
+    setGeneratedPreview(null);
+
+    try {
+      const res = await apiRequest("POST", "/api/generate-theme", { description: desc, language });
+      const data = await res.json();
+
+      const newTheme: StoreTheme = {
+        id: "ai_" + Date.now().toString(36) + Math.random().toString(36).substr(2, 6),
+        name: data.name || "AI Theme",
+        nameAr: data.nameAr || "ثيم ذكي",
+        description: data.description || desc,
+        descriptionAr: data.descriptionAr || desc,
+        mode: data.mode === "dark" ? "dark" : "light",
+        accent: data.accent,
+        shiftColors: data.shiftColors,
+        headerBg: data.headerBg,
+        dayHeaderBg: data.dayHeaderBg,
+        surfaceBg: data.surfaceBg,
+        cardBg: data.cardBg,
+        textColor: data.textColor,
+        textSecondary: data.textSecondary,
+        borderColor: data.borderColor,
+      };
+
+      setGeneratedPreview(newTheme);
+      playSound("success");
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: any) {
+      playSound("toggle");
+      Alert.alert(
+        t("خطأ", "Error"),
+        t("فشل إنشاء الثيم. حاول مرة أخرى.", "Failed to generate theme. Please try again.")
+      );
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveAiTheme = () => {
+    if (!generatedPreview) return;
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    playSound("success");
+    addAiTheme(generatedPreview);
+    applyStoreTheme(generatedPreview.id);
+    setGeneratedPreview(null);
+    setAiPrompt("");
+  };
+
+  const handleDeleteAiTheme = (themeId: string) => {
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    playSound("toggle");
+    removeAiTheme(themeId);
   };
 
   return (
@@ -165,6 +243,146 @@ export default function ThemeStoreScreen() {
       >
         <View style={styles.sectionHeader}>
           <Ionicons name="sparkles" size={18} color={colors.accent} />
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            {t("إنشاء ثيم بالذكاء الاصطناعي", "AI Theme Generator")}
+          </Text>
+        </View>
+        <Text style={[styles.sectionSubtext, { color: colors.textSecondary }]}>
+          {t("صف الأجواء التي تريدها وسيتم إنشاء ثيم مخصص لك", "Describe the mood you want and get a custom theme")}
+        </Text>
+
+        <View style={[aiStyles.inputRow, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+          <TextInput
+            value={aiPrompt}
+            onChangeText={setAiPrompt}
+            placeholder={t("مثال: غروب على البحر...", "e.g. Ocean sunset...")}
+            placeholderTextColor={colors.textSecondary}
+            style={[aiStyles.input, { color: colors.text, textAlign: language === "ar" ? "right" : "left" }]}
+            editable={!isGenerating}
+            returnKeyType="go"
+            onSubmitEditing={() => handleGenerate()}
+          />
+          <Pressable
+            onPress={() => handleGenerate()}
+            disabled={isGenerating || !aiPrompt.trim()}
+            style={({ pressed }) => [
+              aiStyles.generateBtn,
+              {
+                backgroundColor: isGenerating || !aiPrompt.trim() ? colors.border : colors.accent,
+                opacity: pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            {isGenerating ? (
+              <ActivityIndicator size="small" color="#FFF" />
+            ) : (
+              <Ionicons name="sparkles" size={20} color="#FFF" />
+            )}
+          </Pressable>
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={aiStyles.suggestionsRow}>
+          {AI_SUGGESTIONS.map((s, i) => (
+            <Pressable
+              key={i}
+              onPress={() => {
+                const text = language === "ar" ? s.ar : s.en;
+                setAiPrompt(text);
+                handleGenerate(text);
+              }}
+              disabled={isGenerating}
+              style={({ pressed }) => [
+                aiStyles.suggestionChip,
+                {
+                  backgroundColor: isDark ? "#1A1A2E" : "#F0F0F5",
+                  borderColor: colors.border,
+                  opacity: pressed ? 0.7 : isGenerating ? 0.5 : 1,
+                },
+              ]}
+            >
+              <Text style={[aiStyles.suggestionText, { color: colors.textSecondary }]}>
+                {language === "ar" ? s.ar : s.en}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+
+        {isGenerating && (
+          <View style={[aiStyles.loadingCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
+            <ActivityIndicator size="large" color={colors.accent} />
+            <Text style={[aiStyles.loadingText, { color: colors.textSecondary }]}>
+              {t("جاري إنشاء الثيم...", "Generating your theme...")}
+            </Text>
+          </View>
+        )}
+
+        {generatedPreview && !isGenerating && (
+          <View style={{ marginBottom: 8 }}>
+            <ThemeCard
+              theme={generatedPreview}
+              isActive={false}
+              onApply={handleSaveAiTheme}
+              language={language}
+            />
+            <View style={aiStyles.previewActions}>
+              <Pressable
+                onPress={handleSaveAiTheme}
+                style={({ pressed }) => [
+                  aiStyles.saveBtn,
+                  { backgroundColor: colors.accent, opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                <Ionicons name="checkmark-circle" size={18} color="#FFF" />
+                <Text style={aiStyles.saveBtnText}>
+                  {t("حفظ وتطبيق", "Save & Apply")}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => handleGenerate()}
+                style={({ pressed }) => [
+                  aiStyles.retryBtn,
+                  { borderColor: colors.border, opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Ionicons name="refresh" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {aiGeneratedThemes.length > 0 && (
+          <>
+            <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+              <Ionicons name="color-wand" size={18} color={colors.accent} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {t("ثيماتي المخصصة", "My AI Themes")}
+              </Text>
+            </View>
+            {aiGeneratedThemes.map((theme) => (
+              <View key={theme.id}>
+                <ThemeCard
+                  theme={theme}
+                  isActive={storeThemeId === theme.id}
+                  onApply={() => handleApply(theme.id)}
+                  language={language}
+                />
+                <Pressable
+                  onPress={() => handleDeleteAiTheme(theme.id)}
+                  style={({ pressed }) => [
+                    aiStyles.deleteBtn,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <Ionicons name="trash-outline" size={14} color="#E53935" />
+                  <Text style={aiStyles.deleteText}>{t("حذف", "Delete")}</Text>
+                </Pressable>
+              </View>
+            ))}
+          </>
+        )}
+
+        <View style={[styles.sectionHeader, { marginTop: 28 }]}>
+          <Ionicons name="color-palette" size={18} color={colors.accent} />
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             {t("ثيمات التقويم", "Calendar Themes")}
           </Text>
@@ -344,5 +562,101 @@ const styles = StyleSheet.create({
   resetText: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 14,
+  },
+});
+
+const aiStyles = StyleSheet.create({
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingLeft: 14,
+    paddingRight: 4,
+    paddingVertical: 4,
+    gap: 8,
+    marginBottom: 12,
+  },
+  input: {
+    flex: 1,
+    fontFamily: "Cairo_400Regular",
+    fontSize: 14,
+    paddingVertical: 8,
+  },
+  generateBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  suggestionsRow: {
+    marginBottom: 16,
+  },
+  suggestionChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+  },
+  suggestionText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 12,
+  },
+  loadingCard: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 16,
+    gap: 14,
+  },
+  loadingText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+  },
+  previewActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: -8,
+    marginBottom: 16,
+  },
+  saveBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  saveBtnText: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 14,
+    color: "#FFF",
+  },
+  retryBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 6,
+    marginTop: -10,
+    marginBottom: 12,
+  },
+  deleteText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 12,
+    color: "#E53935",
   },
 });
