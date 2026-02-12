@@ -8,6 +8,7 @@ export function getThemeColors(isDark: boolean, shiftColors: { morning: string; 
   };
 
   return {
+    isDark,
     primary: isDark ? "#FFFFFF" : "#0F2027",
     primaryLight: isDark ? "#CCCCCC" : "#1A3A4A",
     accent: "#F5A623",

@@ -4,6 +4,8 @@ export interface ShiftDefinition {
   type: ShiftType;
   label: string;
   labelAr: string;
+  shortLabel: string;
+  shortLabelAr: string;
   startTime: string;
   endTime: string;
 }
@@ -20,6 +22,8 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
     type: "morning",
     label: "Morning",
     labelAr: "صباحي",
+    shortLabel: "Day",
+    shortLabelAr: "نهار",
     startTime: "06:00",
     endTime: "14:00",
   },
@@ -27,6 +31,8 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
     type: "evening",
     label: "Evening",
     labelAr: "مسائي",
+    shortLabel: "Eve",
+    shortLabelAr: "مساء",
     startTime: "14:00",
     endTime: "22:00",
   },
@@ -34,6 +40,8 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
     type: "night",
     label: "Night",
     labelAr: "ليلي",
+    shortLabel: "Night",
+    shortLabelAr: "ليل",
     startTime: "22:00",
     endTime: "06:00",
   },
@@ -41,6 +49,8 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
     type: "rest",
     label: "Rest",
     labelAr: "راحة",
+    shortLabel: "Off",
+    shortLabelAr: "إجازة",
     startTime: "",
     endTime: "",
   },
@@ -120,8 +130,13 @@ export const MONTH_NAMES_EN = [
   "September", "October", "November", "December",
 ];
 
+export const MONTH_SHORT_EN = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
 export const DAY_NAMES_AR = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"];
-export const DAY_NAMES_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export const DAY_NAMES_EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 export const DAY_FULL_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 export const DAY_FULL_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
