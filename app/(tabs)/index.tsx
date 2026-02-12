@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -24,9 +24,10 @@ import {
   getFirstDayOfMonth,
   MONTH_NAMES_AR,
   MONTH_NAMES_EN,
-  DAY_NAMES_AR,
-  DAY_NAMES_EN,
+  DAY_FULL_AR,
+  DAY_FULL_EN,
   parseDate,
+  formatDate,
 } from "@/lib/shift-utils";
 
 function ShiftBadge({ type, colors, lang }: { type: ShiftType; colors: ReturnType<typeof useColors>; lang: string }) {
@@ -48,32 +49,22 @@ interface CalendarDayCellProps {
   date: Date;
   colors: ReturnType<typeof useColors>;
   hasNote: boolean;
+  isHoliday: boolean;
 }
 
-function CalendarDayCell({ day, shiftType, isToday, date, colors, hasNote }: CalendarDayCellProps) {
+function CalendarDayCell({ day, shiftType, isToday, date, colors, hasNote, isHoliday }: CalendarDayCellProps) {
   const shiftColor = colors.shifts[shiftType];
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dateParam = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
   const handlePress = () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-    router.push({
-      pathname: "/day-detail",
-      params: { date: dateParam },
-    });
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: "/day-detail", params: { date: dateParam } });
   };
 
   const handleLongPress = () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    }
-    router.push({
-      pathname: "/day-detail",
-      params: { date: dateParam },
-    });
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    router.push({ pathname: "/day-detail", params: { date: dateParam } });
   };
 
   return (
@@ -83,14 +74,15 @@ function CalendarDayCell({ day, shiftType, isToday, date, colors, hasNote }: Cal
       delayLongPress={400}
       style={({ pressed }) => [
         styles.dayCell,
-        { backgroundColor: shiftColor.bg, opacity: pressed ? 0.7 : 1 },
+        { backgroundColor: isHoliday ? "#FFF3E0" : shiftColor.bg, opacity: pressed ? 0.7 : 1 },
         isToday && { borderWidth: 2, borderColor: colors.accent },
+        isHoliday && { borderWidth: 1, borderColor: "#FF9800" },
       ]}
     >
       <Text
         style={[
           styles.dayNumber,
-          { color: shiftColor.color },
+          { color: isHoliday ? "#FF9800" : shiftColor.color },
           isToday && styles.todayText,
         ]}
       >
@@ -98,9 +90,8 @@ function CalendarDayCell({ day, shiftType, isToday, date, colors, hasNote }: Cal
       </Text>
       <View style={styles.dotRow}>
         <View style={[styles.shiftDot, { backgroundColor: shiftColor.color }]} />
-        {hasNote && (
-          <View style={[styles.noteDot, { backgroundColor: colors.accent }]} />
-        )}
+        {hasNote && <View style={[styles.noteDot, { backgroundColor: colors.accent }]} />}
+        {isHoliday && <View style={[styles.noteDot, { backgroundColor: "#FF9800" }]} />}
       </View>
     </Pressable>
   );
@@ -117,7 +108,7 @@ export default function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
 
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
-  const dayNames = language === "ar" ? DAY_NAMES_AR : DAY_NAMES_EN;
+  const dayFullNames = language === "ar" ? DAY_FULL_AR : DAY_FULL_EN;
 
   const goToPrevMonth = useCallback(() => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -142,6 +133,8 @@ export default function CalendarScreen() {
   const daysInMonth = getDaysInMonth(currentYear, currentMonth);
   const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
   const startDate = parseDate(config.startDate);
+
+  const holidayDates = new Set(config.holidays.map((h) => h.date));
 
   const calendarDays: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
@@ -202,7 +195,7 @@ export default function CalendarScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.weekDaysRow}>
-          {dayNames.map((name) => (
+          {dayFullNames.map((name) => (
             <View key={name} style={styles.weekDayCell}>
               <Text style={[styles.weekDayText, { color: colors.textSecondary }]}>{name}</Text>
             </View>
@@ -215,8 +208,9 @@ export default function CalendarScreen() {
               if (day === null) return <View key={di} style={styles.emptyCell} />;
               const cellDate = new Date(currentYear, currentMonth, day);
               const shiftType = getShiftForDate(cellDate, startDate, config.pattern);
-              const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+              const dateKey = formatDate(cellDate);
               const hasNote = !!notes[dateKey]?.text;
+              const isHoliday = holidayDates.has(dateKey);
               return (
                 <CalendarDayCell
                   key={di}
@@ -226,6 +220,7 @@ export default function CalendarScreen() {
                   date={cellDate}
                   colors={colors}
                   hasNote={hasNote}
+                  isHoliday={isHoliday}
                 />
               );
             })}
@@ -279,10 +274,10 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { fontFamily: "Cairo_400Regular", fontSize: 11 },
   calendarScroll: { flex: 1 },
-  calendarContent: { paddingHorizontal: 12 },
+  calendarContent: { paddingHorizontal: 8 },
   weekDaysRow: { flexDirection: "row", marginBottom: 4 },
-  weekDayCell: { flex: 1, alignItems: "center", paddingVertical: 8 },
-  weekDayText: { fontFamily: "Cairo_600SemiBold", fontSize: 12 },
+  weekDayCell: { flex: 1, alignItems: "center", paddingVertical: 6 },
+  weekDayText: { fontFamily: "Cairo_600SemiBold", fontSize: 9 },
   weekRow: { flexDirection: "row", marginBottom: 6 },
   dayCell: {
     flex: 1,
@@ -290,7 +285,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
-    marginHorizontal: 3,
+    marginHorizontal: 2,
     gap: 1,
   },
   dayNumber: { fontFamily: "Cairo_600SemiBold", fontSize: 15 },
@@ -298,7 +293,7 @@ const styles = StyleSheet.create({
   dotRow: { flexDirection: "row", gap: 3, alignItems: "center" },
   shiftDot: { width: 5, height: 5, borderRadius: 2.5 },
   noteDot: { width: 4, height: 4, borderRadius: 2 },
-  emptyCell: { flex: 1, marginHorizontal: 3 },
+  emptyCell: { flex: 1, marginHorizontal: 2 },
   goTodayButton: {
     flexDirection: "row",
     alignItems: "center",

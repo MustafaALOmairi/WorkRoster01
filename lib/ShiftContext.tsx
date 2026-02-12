@@ -2,22 +2,46 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ShiftType, PRESET_PATTERNS, formatDate } from "./shift-utils";
 
+export interface CustomShiftTimes {
+  morning: { start: string; end: string };
+  evening: { start: string; end: string };
+  night: { start: string; end: string };
+}
+
+export interface Holiday {
+  id: string;
+  name: string;
+  date: string;
+}
+
 interface ShiftConfig {
   startDate: string;
   pattern: ShiftType[];
   patternId: string;
+  customShiftTimes: CustomShiftTimes;
+  holidays: Holiday[];
 }
 
 interface ShiftContextValue {
   config: ShiftConfig;
   updateConfig: (config: Partial<ShiftConfig>) => void;
+  addHoliday: (holiday: Holiday) => void;
+  removeHoliday: (id: string) => void;
   isLoaded: boolean;
 }
+
+const DEFAULT_SHIFT_TIMES: CustomShiftTimes = {
+  morning: { start: "06:00", end: "14:00" },
+  evening: { start: "14:00", end: "22:00" },
+  night: { start: "22:00", end: "06:00" },
+};
 
 const DEFAULT_CONFIG: ShiftConfig = {
   startDate: formatDate(new Date()),
   pattern: PRESET_PATTERNS[0].shifts,
   patternId: PRESET_PATTERNS[0].id,
+  customShiftTimes: DEFAULT_SHIFT_TIMES,
+  holidays: [],
 };
 
 const STORAGE_KEY = "@shift_calendar_config";
@@ -49,8 +73,24 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addHoliday = (holiday: Holiday) => {
+    setConfig((prev) => {
+      const next = { ...prev, holidays: [...prev.holidays, holiday] };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const removeHoliday = (id: string) => {
+    setConfig((prev) => {
+      const next = { ...prev, holidays: prev.holidays.filter((h) => h.id !== id) };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const value = useMemo(
-    () => ({ config, updateConfig, isLoaded }),
+    () => ({ config, updateConfig, addHoliday, removeHoliday, isLoaded }),
     [config, isLoaded]
   );
 

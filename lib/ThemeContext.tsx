@@ -26,6 +26,17 @@ const COLOR_PRESETS: { name: string; nameAr: string; colors: ShiftColors }[] = [
   { name: "Neon", nameAr: "نيون", colors: { morning: "#FF6D00", evening: "#D500F9", night: "#304FFE", rest: "#00C853" } },
 ];
 
+export const AVAILABLE_COLORS = [
+  "#E67E22", "#E74C8B", "#3F51B5", "#43A047",
+  "#FF6D00", "#D500F9", "#304FFE", "#00C853",
+  "#0097A7", "#FF7043", "#1565C0", "#26A69A",
+  "#FF8F00", "#D84315", "#4527A0", "#2E7D32",
+  "#F4A261", "#E76F51", "#264653", "#2A9D8F",
+  "#E53935", "#8E24AA", "#1E88E5", "#00897B",
+  "#FFB300", "#6D4C41", "#546E7A", "#C0CA33",
+  "#F06292", "#7E57C2", "#29B6F6", "#66BB6A",
+];
+
 interface AppPrefs {
   theme: ThemeMode;
   language: Language;

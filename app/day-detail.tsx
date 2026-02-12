@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
-import { useNotes, DayNote } from "@/lib/NotesContext";
+import { useNotes } from "@/lib/NotesContext";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
@@ -55,10 +55,20 @@ export default function DayDetailSheet() {
   const def = SHIFT_DEFINITIONS[shiftType];
   const shiftColor = colors.shifts[shiftType];
 
+  const customTimes = config.customShiftTimes;
+  let displayStart = def.startTime;
+  let displayEnd = def.endTime;
+  if (shiftType !== "rest" && customTimes[shiftType as "morning" | "evening" | "night"]) {
+    displayStart = customTimes[shiftType as "morning" | "evening" | "night"].start;
+    displayEnd = customTimes[shiftType as "morning" | "evening" | "night"].end;
+  }
+
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
   const dayFullNames = language === "ar" ? DAY_FULL_AR : DAY_FULL_EN;
   const dayName = dayFullNames[d.getDay()];
   const formattedDate = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+  const holiday = config.holidays.find((h) => h.date === date);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     morning: "sunny",
@@ -98,15 +108,22 @@ export default function DayDetailSheet() {
         <Text style={[styles.dayName, { color: colors.text }]}>{dayName}</Text>
         <Text style={[styles.dateText, { color: colors.textSecondary }]}>{formattedDate}</Text>
 
+        {holiday && (
+          <View style={[styles.holidayBanner, { backgroundColor: "#FFF3E0" }]}>
+            <Ionicons name="star" size={16} color="#FF9800" />
+            <Text style={styles.holidayBannerText}>{holiday.name}</Text>
+          </View>
+        )}
+
         <View style={[styles.shiftCard, { backgroundColor: shiftColor.bg }]}>
           <Text style={[styles.shiftLabel, { color: shiftColor.color }]}>
             {language === "ar" ? def.labelAr : def.label}
           </Text>
-          {def.startTime ? (
+          {displayStart ? (
             <View style={styles.timeRow}>
               <Ionicons name="time-outline" size={16} color={shiftColor.color} />
               <Text style={[styles.timeText, { color: shiftColor.color }]}>
-                {def.startTime} - {def.endTime}
+                {displayStart} - {displayEnd}
               </Text>
             </View>
           ) : (
@@ -207,6 +224,20 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_400Regular",
     fontSize: 14,
     textAlign: "center",
+  },
+  holidayBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    width: "100%",
+  },
+  holidayBannerText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+    color: "#FF9800",
   },
   shiftCard: {
     width: "100%",
