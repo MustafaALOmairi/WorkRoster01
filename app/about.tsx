@@ -46,7 +46,7 @@ export default function AboutScreen() {
             resizeMode="contain"
           />
           <Text style={[styles.appName, { color: colors.text }]}>
-            {t("تقويم الشفتات", "Shift Calendar")}
+            {t("ورك روستر", "WorkRoster")}
           </Text>
           <Text style={[styles.version, { color: colors.textSecondary }]}>
             {t("الإصدار", "Version")} {APP_VERSION}
