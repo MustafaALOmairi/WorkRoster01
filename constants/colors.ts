@@ -1,4 +1,14 @@
-export function getThemeColors(isDark: boolean, shiftColors: { morning: string; evening: string; night: string; rest: string }) {
+interface StoreThemeOverride {
+  headerBg: string;
+  dayHeaderBg: string;
+  surfaceBg: string;
+  cardBg: string;
+  textColor: string;
+  textSecondary: string;
+  borderColor: string;
+}
+
+export function getThemeColors(isDark: boolean, shiftColors: { morning: string; evening: string; night: string; rest: string }, accent?: string, storeTheme?: StoreThemeOverride) {
   const lighten = (hex: string, amount: number) => {
     const num = parseInt(hex.replace("#", ""), 16);
     const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(255 * amount));
@@ -7,20 +17,23 @@ export function getThemeColors(isDark: boolean, shiftColors: { morning: string; 
     return `rgb(${r},${g},${b})`;
   };
 
+  const accentColor = accent || "#F5A623";
+  const accentLightColor = lighten(accentColor, 0.35);
+
   return {
     isDark,
-    primary: isDark ? "#FFFFFF" : "#0F2027",
+    primary: isDark ? "#FFFFFF" : (storeTheme?.textColor || "#0F2027"),
     primaryLight: isDark ? "#CCCCCC" : "#1A3A4A",
-    accent: "#F5A623",
-    accentLight: "#FFD080",
-    surface: isDark ? "#0A0A0A" : "#FFFFFF",
-    surfaceSecondary: isDark ? "#1A1A1A" : "#F4F6F8",
+    accent: accentColor,
+    accentLight: accentLightColor,
+    surface: isDark ? "#0A0A0A" : (storeTheme?.surfaceBg || "#FFFFFF"),
+    surfaceSecondary: isDark ? "#1A1A1A" : (storeTheme?.cardBg || "#F4F6F8"),
     surfaceTertiary: isDark ? "#252525" : "#EAEEF2",
-    text: isDark ? "#FFFFFF" : "#0F2027",
-    textSecondary: isDark ? "#999" : "#6B7C8A",
+    text: isDark ? "#FFFFFF" : (storeTheme?.textColor || "#0F2027"),
+    textSecondary: isDark ? "#999" : (storeTheme?.textSecondary || "#6B7C8A"),
     textLight: "#FFFFFF",
-    border: isDark ? "#333" : "#E2E8EE",
-    cardBg: isDark ? "#1A1A1A" : "#F4F6F8",
+    border: isDark ? "#333" : (storeTheme?.borderColor || "#E2E8EE"),
+    cardBg: isDark ? "#1A1A1A" : (storeTheme?.cardBg || "#F4F6F8"),
 
     shifts: {
       morning: {
