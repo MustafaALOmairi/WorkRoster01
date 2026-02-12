@@ -42,6 +42,8 @@ export interface StoreTheme {
   textColor: string;
   textSecondary: string;
   borderColor: string;
+  backgroundImage?: string;
+  backgroundOpacity?: number;
 }
 
 export const STORE_THEMES: StoreTheme[] = [
@@ -127,6 +129,7 @@ interface ThemeContextValue {
   storeThemeId: string | null;
   accent: string;
   aiGeneratedThemes: StoreTheme[];
+  activeStoreTheme: StoreTheme | null;
   setTheme: (t: ThemeMode) => void;
   setLanguage: (l: Language) => void;
   setColorPreset: (index: number) => void;
@@ -187,6 +190,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const activeStoreTheme = useMemo(() => {
+    if (!prefs.storeThemeId) return null;
+    return [...STORE_THEMES, ...aiGeneratedThemes].find((t) => t.id === prefs.storeThemeId) || null;
+  }, [prefs.storeThemeId, aiGeneratedThemes]);
+
   const value = useMemo<ThemeContextValue>(
     () => ({
       theme: prefs.theme,
@@ -197,6 +205,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       storeThemeId: prefs.storeThemeId,
       accent: prefs.accent,
       aiGeneratedThemes,
+      activeStoreTheme,
       isDark: prefs.theme === "dark",
       isLoaded,
       setTheme: (t) => updatePrefs({ theme: t }),
@@ -250,7 +259,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       },
       t: (ar, en) => (prefs.language === "ar" ? ar : en),
     }),
-    [prefs, isLoaded, aiGeneratedThemes]
+    [prefs, isLoaded, aiGeneratedThemes, activeStoreTheme]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

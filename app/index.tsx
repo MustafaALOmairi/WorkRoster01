@@ -5,6 +5,8 @@ import {
   View,
   Pressable,
   Platform,
+  Image,
+  ImageBackground,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -96,7 +98,7 @@ function CalendarDayCell({
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { language, t, isDark } = useAppTheme();
+  const { language, t, isDark, activeStoreTheme } = useAppTheme();
   const { config, isLoaded } = useShiftConfig();
   const { notes } = useNotes();
   const { playSound } = useSound();
@@ -201,37 +203,11 @@ export default function CalendarScreen() {
   const weekendSaturdayColor = "#D4A84B";
   const weekendFridayColor = language === "ar" ? "#5B9BD5" : undefined;
 
-  return (
-    <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
-      <View style={styles.topHeader}>
-        <Pressable
-          onPress={() => {
-            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            playSound("open");
-            setDrawerVisible(true);
-          }}
-          hitSlop={12}
-        >
-          <Ionicons name="menu" size={24} color={headerColor} />
-        </Pressable>
-        <View style={styles.monthNavCenter}>
-          <Pressable onPress={language === "ar" ? goToNextMonth : goToPrevMonth} hitSlop={12}>
-            <Ionicons name={language === "ar" ? "chevron-forward" : "chevron-back"} size={20} color={subtextColor} />
-          </Pressable>
-          <Pressable onPress={goToToday}>
-            <Text style={[styles.monthTitle, { color: headerColor }]}>
-              {monthShort[currentMonth]} {currentYear}
-            </Text>
-          </Pressable>
-          <Pressable onPress={language === "ar" ? goToPrevMonth : goToNextMonth} hitSlop={12}>
-            <Ionicons name={language === "ar" ? "chevron-back" : "chevron-forward"} size={20} color={subtextColor} />
-          </Pressable>
-        </View>
-        <Pressable onPress={goToToday} hitSlop={12}>
-          <Ionicons name="calendar" size={22} color="#5B9BD5" />
-        </Pressable>
-      </View>
+  const themeBgImage = activeStoreTheme?.backgroundImage;
+  const themeBgOpacity = activeStoreTheme?.backgroundOpacity ?? 0.15;
 
+  const calendarContent = (
+    <>
       <View style={styles.weekDaysRow}>
         {dayNames.map((name, i) => {
           let dayColor = isDark ? "#C8CDD3" : "#777";
@@ -276,6 +252,54 @@ export default function CalendarScreen() {
           </View>
         ))}
       </View>
+    </>
+  );
+
+  return (
+    <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
+      <View style={styles.topHeader}>
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            playSound("open");
+            setDrawerVisible(true);
+          }}
+          hitSlop={12}
+        >
+          <Ionicons name="menu" size={24} color={headerColor} />
+        </Pressable>
+        <View style={styles.monthNavCenter}>
+          <Pressable onPress={language === "ar" ? goToNextMonth : goToPrevMonth} hitSlop={12}>
+            <Ionicons name={language === "ar" ? "chevron-forward" : "chevron-back"} size={20} color={subtextColor} />
+          </Pressable>
+          <Pressable onPress={goToToday}>
+            <Text style={[styles.monthTitle, { color: headerColor }]}>
+              {monthShort[currentMonth]} {currentYear}
+            </Text>
+          </Pressable>
+          <Pressable onPress={language === "ar" ? goToPrevMonth : goToNextMonth} hitSlop={12}>
+            <Ionicons name={language === "ar" ? "chevron-back" : "chevron-forward"} size={20} color={subtextColor} />
+          </Pressable>
+        </View>
+        <Pressable onPress={goToToday} hitSlop={12}>
+          <Ionicons name="calendar" size={22} color="#5B9BD5" />
+        </Pressable>
+      </View>
+
+      {themeBgImage ? (
+        <View style={styles.calendarWithBg}>
+          <Image
+            source={{ uri: themeBgImage }}
+            style={[StyleSheet.absoluteFill, { opacity: themeBgOpacity }]}
+            resizeMode="cover"
+          />
+          {calendarContent}
+        </View>
+      ) : (
+        <View style={styles.calendarWithBg}>
+          {calendarContent}
+        </View>
+      )}
 
       <View style={[styles.detailCard, { backgroundColor: cardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
@@ -381,6 +405,10 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     fontSize: 11,
     letterSpacing: 0.5,
+  },
+  calendarWithBg: {
+    flex: 1,
+    overflow: "hidden",
   },
   calendarGrid: {
     flex: 1,

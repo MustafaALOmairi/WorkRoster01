@@ -9,6 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -91,12 +92,32 @@ function ThemeCard({
 
   return (
     <View style={[cardStyles.card, { backgroundColor: colors.surfaceSecondary, borderColor: isActive ? theme.accent : colors.border }]}>
-      <MiniCalendarPreview theme={theme} />
+      {theme.backgroundImage ? (
+        <View style={cardStyles.imagePreviewContainer}>
+          <Image
+            source={{ uri: theme.backgroundImage }}
+            style={cardStyles.imagePreview}
+            resizeMode="cover"
+          />
+          <View style={cardStyles.imageOverlay}>
+            <MiniCalendarPreview theme={theme} />
+          </View>
+        </View>
+      ) : (
+        <MiniCalendarPreview theme={theme} />
+      )}
 
       <View style={cardStyles.info}>
-        <Text style={[cardStyles.name, { color: colors.text }]}>
-          {language === "ar" ? theme.nameAr : theme.name}
-        </Text>
+        <View style={cardStyles.nameRow}>
+          <Text style={[cardStyles.name, { color: colors.text, flex: 1 }]}>
+            {language === "ar" ? theme.nameAr : theme.name}
+          </Text>
+          {theme.backgroundImage && (
+            <View style={[cardStyles.imageBadge, { backgroundColor: theme.accent }]}>
+              <Ionicons name="image" size={12} color="#FFF" />
+            </View>
+          )}
+        </View>
         <Text style={[cardStyles.desc, { color: colors.textSecondary }]} numberOfLines={2}>
           {language === "ar" ? theme.descriptionAr : theme.description}
         </Text>
@@ -132,12 +153,14 @@ function ThemeCard({
 }
 
 const AI_SUGGESTIONS = [
+  { en: "Anime characters", ar: "شخصيات أنمي" },
+  { en: "Sports cars", ar: "سيارات رياضية" },
   { en: "Ocean sunset", ar: "غروب المحيط" },
   { en: "Cherry blossom", ar: "أزهار الكرز" },
-  { en: "Northern lights", ar: "الشفق القطبي" },
-  { en: "Desert sand", ar: "رمال الصحراء" },
-  { en: "Midnight city", ar: "مدينة منتصف الليل" },
-  { en: "Forest morning", ar: "صباح الغابة" },
+  { en: "Space galaxy", ar: "فضاء ومجرات" },
+  { en: "Football stadium", ar: "ملعب كرة قدم" },
+  { en: "Nature forest", ar: "طبيعة وغابات" },
+  { en: "Cyberpunk city", ar: "مدينة سايبربنك" },
 ];
 
 export default function ThemeStoreScreen() {
@@ -193,6 +216,8 @@ export default function ThemeStoreScreen() {
         textColor: data.textColor,
         textSecondary: data.textSecondary,
         borderColor: data.borderColor,
+        backgroundImage: data.backgroundImage || undefined,
+        backgroundOpacity: 0.15,
       };
 
       setGeneratedPreview(newTheme);
@@ -311,7 +336,7 @@ export default function ThemeStoreScreen() {
           <View style={[aiStyles.loadingCard, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
             <ActivityIndicator size="large" color={colors.accent} />
             <Text style={[aiStyles.loadingText, { color: colors.textSecondary }]}>
-              {t("جاري إنشاء الثيم...", "Generating your theme...")}
+              {t("جاري إنشاء الثيم والصورة...", "Generating theme & image...")}
             </Text>
           </View>
         )}
@@ -477,6 +502,33 @@ const cardStyles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 2,
     marginBottom: 16,
+  },
+  imagePreviewContainer: {
+    position: "relative",
+    height: 160,
+  },
+  imagePreview: {
+    width: "100%",
+    height: "100%",
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  imageBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   info: {
     padding: 16,

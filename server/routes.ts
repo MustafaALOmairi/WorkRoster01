@@ -54,7 +54,8 @@ Return ONLY valid JSON with this exact structure (no markdown, no extra text):
   "cardBg": "<hex color>",
   "textColor": "<hex color>",
   "textSecondary": "<hex color>",
-  "borderColor": "<hex color>"
+  "borderColor": "<hex color>",
+  "imagePrompt": "<detailed image generation prompt for a decorative background image matching the theme, e.g. for anime theme describe anime characters, for cars describe car imagery, for ocean describe underwater scene. Make it vivid and artistic, suitable as a calendar background with some transparency>"
 }
 
 Rules:
@@ -63,19 +64,20 @@ Rules:
 - The theme should feel cohesive and match the description's mood
 - Choose light or dark mode based on what fits the description
 - Ensure sufficient contrast between text and backgrounds
-- Morning shifts = warm/bright, Evening = warm/muted, Night = cool/dark, Rest = calm/neutral`;
+- Morning shifts = warm/bright, Evening = warm/muted, Night = cool/dark, Rest = calm/neutral
+- The imagePrompt should describe a beautiful decorative image that matches the theme concept`;
 
-      const response = await openai.chat.completions.create({
+      const colorsResponse = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Create a calendar theme inspired by: "${description}"` },
         ],
         temperature: 0.8,
-        max_tokens: 500,
+        max_tokens: 600,
       });
 
-      const content = response.choices[0]?.message?.content?.trim() || "";
+      const content = colorsResponse.choices[0]?.message?.content?.trim() || "";
       const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const theme = JSON.parse(jsonStr);
 
@@ -84,7 +86,24 @@ Rules:
         return;
       }
 
-      res.json(theme);
+      let backgroundImage: string | undefined;
+      try {
+        const imgPrompt = theme.imagePrompt || `Beautiful artistic illustration inspired by "${description}", decorative background, vibrant colors, digital art style`;
+        const imageResponse = await openai.images.generate({
+          model: "gpt-image-1",
+          prompt: imgPrompt + ". Clean artistic illustration, no text, suitable as a subtle background overlay for a mobile calendar app.",
+          size: "1024x1024",
+        });
+        const b64 = imageResponse.data?.[0]?.b64_json;
+        if (b64) {
+          backgroundImage = `data:image/png;base64,${b64}`;
+        }
+      } catch (imgError: any) {
+        console.error("Image generation failed (continuing without image):", imgError?.message);
+      }
+
+      delete theme.imagePrompt;
+      res.json({ ...theme, backgroundImage });
     } catch (error: any) {
       console.error("Theme generation error:", error?.message || error);
       res.status(500).json({ error: "Failed to generate theme" });
