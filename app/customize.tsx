@@ -7,12 +7,12 @@ import {
   ScrollView,
   Platform,
   Alert,
-  Image,
   TextInput,
   Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
@@ -26,7 +26,6 @@ import {
   MONTH_NAMES_AR,
   MONTH_NAMES_EN,
   getShiftForDate,
-  getDaysInMonth,
   parseDate,
   formatDate,
 } from "@/lib/shift-utils";
@@ -316,10 +315,8 @@ function AddHolidayModal({
             placeholderTextColor={colors.textSecondary}
             textAlign={language === "ar" ? "right" : "left"}
           />
-
           <DatePicker value={startDateVal} onChange={setStartDateVal} colors={colors} language={language} label={t("من", "From")} />
           <DatePicker value={endDateVal} onChange={setEndDateVal} colors={colors} language={language} label={t("إلى", "To")} />
-
           <View style={styles.holidayColorSection}>
             <Text style={[styles.holidayColorLabel, { color: colors.textSecondary }]}>
               {t("اللون", "Color")}
@@ -342,7 +339,6 @@ function AddHolidayModal({
               ))}
             </View>
           )}
-
           <Pressable onPress={handleAdd} style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}>
             <Ionicons name="checkmark" size={18} color="#FFF" />
             <Text style={styles.holidayAddBtnText}>{t("إضافة", "Add")}</Text>
@@ -401,119 +397,16 @@ function ExportDateRangeModal({
   );
 }
 
-function ImportHolidayModal({
-  visible,
-  onClose,
-  holidays,
-  onImport,
-  colors,
-  language,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  holidays: Array<{ name: string; startDate: string; endDate: string; color: string }>;
-  onImport: (holidays: Holiday[]) => void;
-  colors: ReturnType<typeof useColors>;
-  language: string;
-}) {
-  const [editableHolidays, setEditableHolidays] = useState(
-    holidays.map((h) => ({ ...h, id: Date.now().toString() + Math.random().toString(36).substr(2, 9) }))
-  );
-  const [editingIdx, setEditingIdx] = useState<number | null>(null);
-  const [editColorIdx, setEditColorIdx] = useState<number | null>(null);
-  const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
-  const t = (ar: string, en: string) => language === "ar" ? ar : en;
-
-  const formatDisplayDate = (dateStr: string) => {
-    const d = parseDate(dateStr);
-    return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-  };
-
-  const updateHoliday = (idx: number, field: string, value: string) => {
-    setEditableHolidays((prev) => prev.map((h, i) => i === idx ? { ...h, [field]: value } : h));
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <Pressable style={styles.modalOverlay} onPress={onClose}>
-        <Pressable style={[styles.modalContent, { backgroundColor: colors.surface, maxHeight: "80%" }]} onPress={() => {}}>
-          <Text style={[styles.modalTitle, { color: colors.text }]}>
-            {t("إجازات مشتركة", "Shared Holidays")}
-          </Text>
-          <Text style={[styles.importSubtitle, { color: colors.textSecondary }]}>
-            {t("يمكنك تعديل الاسم واللون قبل الإضافة", "You can edit name and color before adding")}
-          </Text>
-          <ScrollView style={styles.importList} showsVerticalScrollIndicator={false}>
-            {editableHolidays.map((h, idx) => (
-              <View key={idx} style={[styles.importItem, { backgroundColor: colors.surfaceSecondary }]}>
-                <View style={styles.importItemHeader}>
-                  <Pressable onPress={() => setEditColorIdx(editColorIdx === idx ? null : idx)} style={[styles.importColorDot, { backgroundColor: h.color }]} />
-                  {editingIdx === idx ? (
-                    <TextInput
-                      style={[styles.importNameInput, { color: colors.text, borderColor: colors.border }]}
-                      value={h.name}
-                      onChangeText={(v) => updateHoliday(idx, "name", v)}
-                      autoFocus
-                      onBlur={() => setEditingIdx(null)}
-                    />
-                  ) : (
-                    <Pressable onPress={() => setEditingIdx(idx)} style={styles.importNameWrap}>
-                      <Text style={[styles.importName, { color: colors.text }]}>{h.name}</Text>
-                      <Ionicons name="pencil" size={14} color={colors.textSecondary} />
-                    </Pressable>
-                  )}
-                </View>
-                {editColorIdx === idx && (
-                  <View style={[styles.colorGrid, { marginTop: 8 }]}>
-                    {AVAILABLE_COLORS.slice(0, 16).map((c) => (
-                      <Pressable
-                        key={c}
-                        onPress={() => { updateHoliday(idx, "color", c); setEditColorIdx(null); }}
-                        style={[styles.colorGridItemSmall, { backgroundColor: c }, h.color === c && styles.colorGridItemActive]}
-                      >
-                        {h.color === c && <Ionicons name="checkmark" size={12} color="#FFF" />}
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-                <Text style={[styles.importDate, { color: colors.textSecondary }]}>
-                  {formatDisplayDate(h.startDate)}
-                  {h.startDate !== h.endDate ? ` → ${formatDisplayDate(h.endDate)}` : ""}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-          <Pressable
-            onPress={() => { onImport(editableHolidays); onClose(); }}
-            style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}
-          >
-            <Ionicons name="add-circle-outline" size={18} color="#FFF" />
-            <Text style={styles.holidayAddBtnText}>
-              {t("إضافة الكل", "Add All")}
-            </Text>
-          </Pressable>
-          <Pressable onPress={onClose} style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceSecondary }]}>
-            <Ionicons name="close" size={20} color={colors.text} />
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
-}
-
-export default function SettingsScreen() {
+export default function CustomizeScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const {
-    language, theme, setLanguage, setTheme,
-    setCustomShiftColor, shiftColors,
-    t,
+    language, setCustomShiftColor, shiftColors, t,
   } = useAppTheme();
   const { config, updateConfig, addHoliday, removeHoliday } = useShiftConfig();
   const [colorPickerShift, setColorPickerShift] = useState<keyof ShiftColors | null>(null);
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showExportRange, setShowExportRange] = useState(false);
-  const [importHolidays, setImportHolidays] = useState<Array<{ name: string; startDate: string; endDate: string; color: string }> | null>(null);
   const [sharingLoading, setSharingLoading] = useState(false);
 
   const exportPDF = useCallback(async (fromDateStr: string, toDateStr: string) => {
@@ -591,12 +484,6 @@ export default function SettingsScreen() {
     }
   }, [config.holidays, language]);
 
-  const handleImportAll = useCallback((holidays: Holiday[]) => {
-    holidays.forEach((h) => addHoliday(h));
-    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert(t("تمت الإضافة", "Added"), t("تمت إضافة الإجازات بنجاح", "Holidays added successfully"));
-  }, [addHoliday, language]);
-
   const updateShiftTime = (shift: "morning" | "evening" | "night", field: "start" | "end", value: string) => {
     const current = config.customShiftTimes;
     updateConfig({
@@ -630,55 +517,19 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.surface, paddingTop: insets.top + webTopInset }]}>
-      <Text style={[styles.title, { color: colors.text }]}>{t("الإعدادات", "Settings")}</Text>
+      <View style={styles.headerRow}>
+        <Pressable onPress={() => router.back()} hitSlop={12}>
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
+        </Pressable>
+        <Text style={[styles.title, { color: colors.text }]}>{t("تخصيص", "Customize")}</Text>
+        <View style={{ width: 24 }} />
+      </View>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 100 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <SectionHeader title={t("اللغة", "Language")} colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          <View style={styles.toggleRow}>
-            <Pressable
-              onPress={() => { setLanguage("ar"); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              style={[styles.toggleBtn, language === "ar" && { backgroundColor: colors.accent }]}
-            >
-              <Text style={[styles.toggleBtnText, language === "ar" && { color: "#FFF" }]}>العربية</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => { setLanguage("en"); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              style={[styles.toggleBtn, language === "en" && { backgroundColor: colors.accent }]}
-            >
-              <Text style={[styles.toggleBtnText, language === "en" && { color: "#FFF" }]}>English</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        <SectionHeader title={t("المظهر", "Theme")} colors={colors} />
-        <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
-          <View style={styles.toggleRow}>
-            <Pressable
-              onPress={() => { setTheme("light"); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              style={[styles.toggleBtn, theme === "light" && { backgroundColor: colors.accent }]}
-            >
-              <Ionicons name="sunny" size={18} color={theme === "light" ? "#FFF" : colors.text} />
-              <Text style={[styles.toggleBtnText, theme === "light" && { color: "#FFF" }]}>
-                {t("فاتح", "Light")}
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => { setTheme("dark"); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              style={[styles.toggleBtn, theme === "dark" && { backgroundColor: colors.accent }]}
-            >
-              <Ionicons name="moon" size={18} color={theme === "dark" ? "#FFF" : colors.text} />
-              <Text style={[styles.toggleBtnText, theme === "dark" && { color: "#FFF" }]}>
-                {t("داكن", "Dark")}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
         <SectionHeader title={t("تخصيص الألوان", "Customize Colors")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
           {colorShiftLabels.map((item, idx) => (
@@ -803,27 +654,6 @@ export default function SettingsScreen() {
             <Ionicons name="share-outline" size={22} color={colors.accent} />
           </Pressable>
         </View>
-
-        <View style={[styles.infoCard, { backgroundColor: colors.surfaceTertiary }]}>
-          <Ionicons name="information-circle-outline" size={18} color={colors.textSecondary} />
-          <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-            {t(
-              "اختر تاريخ بداية الدورة ونظام الدوام وسيتم حساب جميع الشفتات تلقائيا",
-              "Choose the cycle start date and rotation system, and all shifts will be calculated automatically"
-            )}
-          </Text>
-        </View>
-
-        <View style={styles.logoSection}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.logoImage}
-            resizeMode="contain"
-          />
-          <Text style={[styles.copyrightText, { color: colors.textSecondary }]}>
-            جميع الحقوق محفوظة {"\u00A9"}ولد نيوتن 2026
-          </Text>
-        </View>
       </ScrollView>
 
       {colorPickerShift && (
@@ -854,29 +684,22 @@ export default function SettingsScreen() {
         colors={colors}
         language={language}
       />
-
-      {importHolidays && (
-        <ImportHolidayModal
-          visible={true}
-          onClose={() => setImportHolidays(null)}
-          holidays={importHolidays}
-          onImport={handleImportAll}
-          colors={colors}
-          language={language}
-        />
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
   title: {
     fontFamily: "Cairo_700Bold",
-    fontSize: 28,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
+    fontSize: 22,
   },
   scrollView: { flex: 1 },
   sectionHeader: {
@@ -890,25 +713,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     borderRadius: 16,
     overflow: "hidden",
-  },
-  toggleRow: {
-    flexDirection: "row",
-    padding: 8,
-    gap: 8,
-  },
-  toggleBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  toggleBtnText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    color: "#555",
   },
   customColorRow: {
     flexDirection: "row",
@@ -946,10 +750,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
-  timeInputWrap: {
-    flex: 1,
-    gap: 4,
-  },
+  timeInputWrap: { flex: 1, gap: 4 },
   timeInputLabel: {
     fontFamily: "Cairo_400Regular",
     fontSize: 11,
@@ -1109,36 +910,6 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_600SemiBold",
     fontSize: 15,
   },
-  infoCard: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    marginHorizontal: 16,
-    marginTop: 20,
-    padding: 14,
-    borderRadius: 12,
-  },
-  infoText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 20,
-  },
-  logoSection: {
-    alignItems: "center",
-    marginTop: 32,
-    marginBottom: 16,
-    gap: 8,
-  },
-  logoImage: {
-    width: 100,
-    height: 100,
-  },
-  copyrightText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 12,
-    textAlign: "center",
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -1168,13 +939,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  colorGridItemSmall: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1241,54 +1005,5 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     fontSize: 14,
     color: "#FFF",
-  },
-  importSubtitle: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 12,
-    textAlign: "center",
-  },
-  importList: {
-    width: "100%",
-    maxHeight: 300,
-  },
-  importItem: {
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    gap: 6,
-  },
-  importItemHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  importColorDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  importNameInput: {
-    flex: 1,
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  importNameWrap: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  importName: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-  },
-  importDate: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 12,
-    marginLeft: 34,
   },
 });

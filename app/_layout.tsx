@@ -15,21 +15,24 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="search" />
+      <Stack.Screen name="customize" />
+      <Stack.Screen name="settings" />
+      <Stack.Screen name="about" />
+      <Stack.Screen name="theme-store" />
       <Stack.Screen
         name="day-detail"
         options={{
           presentation: "formSheet",
           sheetAllowedDetents: [0.75],
           sheetGrabberVisible: true,
-          headerShown: false,
         }}
       />
       <Stack.Screen
         name="import-holidays/[id]"
         options={{
-          headerShown: false,
           presentation: "modal",
         }}
       />

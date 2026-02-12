@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -14,6 +14,7 @@ import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useShiftConfig } from "@/lib/ShiftContext";
 import { useNotes } from "@/lib/NotesContext";
+import { DrawerMenu } from "@/components/DrawerMenu";
 import {
   ShiftType,
   SHIFT_DEFINITIONS,
@@ -100,6 +101,7 @@ export default function CalendarScreen() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const todayKey = formatDate(today);
   const [selectedDate, setSelectedDate] = useState<string>(todayKey);
+  const [drawerVisible, setDrawerVisible] = useState(false);
 
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
   const monthShort = language === "ar" ? MONTH_NAMES_AR : MONTH_SHORT_EN;
@@ -124,6 +126,13 @@ export default function CalendarScreen() {
     setCurrentMonth(today.getMonth());
     setSelectedDate(todayKey);
   }, []);
+
+  const handleDrawerNavigate = (route: string) => {
+    setDrawerVisible(false);
+    setTimeout(() => {
+      router.push(route as any);
+    }, 100);
+  };
 
   if (!isLoaded) return null;
 
@@ -187,7 +196,13 @@ export default function CalendarScreen() {
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
       <View style={styles.topHeader}>
-        <Pressable onPress={goToToday} hitSlop={12}>
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setDrawerVisible(true);
+          }}
+          hitSlop={12}
+        >
           <Ionicons name="menu" size={24} color={headerColor} />
         </Pressable>
         <View style={styles.monthNavCenter}>
@@ -253,7 +268,7 @@ export default function CalendarScreen() {
         ))}
       </View>
 
-      <View style={[styles.detailCard, { backgroundColor: cardBg, paddingBottom: insets.bottom + webBottomInset + 80 }]}>
+      <View style={[styles.detailCard, { backgroundColor: cardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -315,6 +330,15 @@ export default function CalendarScreen() {
           </Pressable>
         </View>
       </View>
+
+      <DrawerMenu
+        visible={drawerVisible}
+        onClose={() => setDrawerVisible(false)}
+        onNavigate={handleDrawerNavigate}
+        colors={colors}
+        language={language}
+        isDark={isDark}
+      />
     </View>
   );
 }
