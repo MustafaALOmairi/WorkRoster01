@@ -7,6 +7,7 @@ import {
   ScrollView,
   Platform,
   Alert,
+  Image,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -380,6 +381,17 @@ export default function SettingsScreen() {
             )}
           </Text>
         </View>
+
+        <View style={styles.logoSection}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+          <Text style={[styles.copyrightText, { color: colors.textSecondary }]}>
+            جميع الحقوق محفوظة {"\u00A9"}ولد نيوتن 2026
+          </Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -543,5 +555,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
     lineHeight: 20,
+  },
+  logoSection: {
+    alignItems: "center",
+    marginTop: 32,
+    marginBottom: 16,
+    gap: 8,
+  },
+  logoImage: {
+    width: 100,
+    height: 100,
+  },
+  copyrightText: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 12,
+    textAlign: "center",
   },
 });
