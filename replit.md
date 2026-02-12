@@ -13,7 +13,7 @@ Preferred communication style: Simple, everyday language.
 ### Frontend (Expo / React Native)
 
 - **Framework**: Expo SDK 54 with expo-router for file-based routing
-- **Navigation**: Tab-based layout with three tabs: Calendar (index), Search, and Settings. A form sheet modal for day details (`day-detail.tsx`)
+- **Navigation**: Side drawer menu accessible from hamburger icon on calendar screen. Drawer contains: Search, Customize, Theme Store, Settings, About. Each opens as a stack screen. Day details shown in a form sheet modal (`day-detail.tsx`). No bottom tabs.
 - **State Management**: React Context providers for core state:
   - `ShiftContext` — shift pattern configuration (start date, rotation pattern)
   - `ThemeContext` — theme mode (light/dark), language (ar/en), shift color customization
