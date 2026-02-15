@@ -34,7 +34,7 @@ export default function DayDetailSheet() {
   const colors = useColors();
   const { language, t } = useAppTheme();
   const { config } = useShiftConfig();
-  const { getNote, setNote, deleteNote } = useNotes();
+  const { getNote, setNote, deleteNote, requestNotificationPermission } = useNotes();
   const { playSound } = useSound();
 
   const existingNote = date ? getNote(date) : undefined;
@@ -189,7 +189,13 @@ export default function DayDetailSheet() {
             </View>
             <Switch
               value={reminderEnabled}
-              onValueChange={(val) => {
+              onValueChange={async (val) => {
+                if (val) {
+                  const granted = await requestNotificationPermission();
+                  if (!granted && Platform.OS !== "web") {
+                    return;
+                  }
+                }
                 setReminderEnabled(val);
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 playSound("toggle");
