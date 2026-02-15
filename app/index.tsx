@@ -75,9 +75,8 @@ function CalendarDayCell({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.dayCell,
-        { backgroundColor: shiftColor.bg },
         (isToday || isSelected) && [styles.dayCellHighlight, { borderColor: "#5B9BD5" }],
-        isSelected && { backgroundColor: shiftColor.bg },
+        isSelected && { backgroundColor: "rgba(91,155,213,0.1)" },
         { opacity: pressed ? 0.7 : 1 },
       ]}
     >
@@ -340,7 +339,7 @@ export default function CalendarScreen() {
         )}
       </View>
 
-      <View style={[styles.detailCard, { backgroundColor: cardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
+      <View style={[styles.detailCard, { backgroundColor: "#1A1A2E", paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -349,7 +348,7 @@ export default function CalendarScreen() {
           }}
           style={styles.detailCardInner}
         >
-          <Text style={[styles.detailDateText, { color: headerColor }]}>{selFormatted}</Text>
+          <Text style={[styles.detailDateText, { color: "#FFFFFF" }]}>{selFormatted}</Text>
 
           {selHolidays.map((h) => (
             <View key={h.id} style={styles.holidayTag}>
@@ -366,19 +365,19 @@ export default function CalendarScreen() {
           </View>
 
           {selStartTime ? (
-            <Text style={[styles.detailTime, { color: subtextColor }]}>
+            <Text style={[styles.detailTime, { color: "#B0B0C0" }]}>
               {selStartTime} - {selEndTime}
             </Text>
           ) : (
-            <Text style={[styles.detailTime, { color: subtextColor }]}>
+            <Text style={[styles.detailTime, { color: "#B0B0C0" }]}>
               {t("يوم راحة", "Day Off")}
             </Text>
           )}
 
           {notes[selectedDate]?.text ? (
             <View style={styles.notePreview}>
-              <Ionicons name="document-text-outline" size={14} color={subtextColor} />
-              <Text style={[styles.notePreviewText, { color: subtextColor }]} numberOfLines={2}>
+              <Ionicons name="document-text-outline" size={14} color="#B0B0C0" />
+              <Text style={[styles.notePreviewText, { color: "#B0B0C0" }]} numberOfLines={2}>
                 {notes[selectedDate].text}
               </Text>
             </View>
@@ -393,8 +392,8 @@ export default function CalendarScreen() {
             }}
             style={styles.detailActionRow}
           >
-            <Ionicons name="create-outline" size={18} color={subtextColor} />
-            <Text style={[styles.detailActionText, { color: subtextColor }]}>
+            <Ionicons name="create-outline" size={18} color="#B0B0C0" />
+            <Text style={[styles.detailActionText, { color: "#B0B0C0" }]}>
               {t("إضافة ملاحظة", "Add note")}
             </Text>
           </Pressable>
@@ -405,8 +404,8 @@ export default function CalendarScreen() {
             }}
             style={styles.detailActionRow}
           >
-            <Ionicons name="notifications-outline" size={18} color={subtextColor} />
-            <Text style={[styles.detailActionText, { color: subtextColor }]}>
+            <Ionicons name="notifications-outline" size={18} color="#B0B0C0" />
+            <Text style={[styles.detailActionText, { color: "#B0B0C0" }]}>
               {t("تعيين تذكير", "Set reminder")}
             </Text>
           </Pressable>
