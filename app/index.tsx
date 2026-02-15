@@ -155,6 +155,9 @@ export default function CalendarScreen() {
   const getHolidayForDate = (dateKey: string) => {
     return config.holidays.find((h) => dateKey >= h.startDate && dateKey <= h.endDate);
   };
+  const getAllHolidaysForDate = (dateKey: string) => {
+    return config.holidays.filter((h) => dateKey >= h.startDate && dateKey <= h.endDate);
+  };
 
   const calendarDays: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) calendarDays.push(null);
@@ -185,7 +188,7 @@ export default function CalendarScreen() {
     selEndTime = customTimes[selShift as "morning" | "evening" | "night"].end;
   }
 
-  const selHoliday = getHolidayForDate(selectedDate);
+  const selHolidays = getAllHolidaysForDate(selectedDate);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     morning: "sunny",
@@ -312,12 +315,12 @@ export default function CalendarScreen() {
         >
           <Text style={[styles.detailDateText, { color: headerColor }]}>{selFormatted}</Text>
 
-          {selHoliday && (
-            <View style={styles.holidayTag}>
-              <Ionicons name="star" size={14} color="#FF9800" />
-              <Text style={styles.holidayTagText}>{selHoliday.name}</Text>
+          {selHolidays.map((h) => (
+            <View key={h.id} style={styles.holidayTag}>
+              <Ionicons name="star" size={14} color={h.color || "#FF9800"} />
+              <Text style={[styles.holidayTagText, { color: h.color || "#FF9800" }]}>{h.name}</Text>
             </View>
-          )}
+          ))}
 
           <View style={styles.detailShiftRow}>
             <Ionicons name={iconMap[selShift]} size={20} color={selColor.color} />
@@ -474,7 +477,6 @@ const styles = StyleSheet.create({
   holidayTagText: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 13,
-    color: "#FF9800",
   },
   detailShiftRow: {
     flexDirection: "row",

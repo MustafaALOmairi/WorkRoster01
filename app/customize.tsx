@@ -410,6 +410,16 @@ export default function CustomizeScreen() {
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showExportRange, setShowExportRange] = useState(false);
   const [sharingLoading, setSharingLoading] = useState(false);
+  const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set());
+
+  const toggleHolidaySelection = (id: string) => {
+    setSelectedHolidayIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const exportPDF = useCallback(async (fromDateStr: string, toDateStr: string) => {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -455,13 +465,14 @@ export default function CustomizeScreen() {
   }, [config, language, colors]);
 
   const shareHolidays = useCallback(async () => {
-    if (config.holidays.length === 0) {
-      Alert.alert(t("لا توجد إجازات", "No Holidays"), t("أضف إجازات أولاً لمشاركتها", "Add holidays first to share them"));
+    const toShare = config.holidays.filter((h) => selectedHolidayIds.has(h.id));
+    if (toShare.length === 0) {
+      Alert.alert(t("لم يتم التحديد", "No Selection"), t("حدد الإجازات التي تريد مشاركتها", "Select the holidays you want to share"));
       return;
     }
     setSharingLoading(true);
     try {
-      const payload = config.holidays.map((h) => ({
+      const payload = toShare.map((h) => ({
         name: h.name,
         startDate: h.startDate,
         endDate: h.endDate,
@@ -485,7 +496,7 @@ export default function CustomizeScreen() {
     } finally {
       setSharingLoading(false);
     }
-  }, [config.holidays, language]);
+  }, [config.holidays, language, selectedHolidayIds]);
 
   const updateShiftTime = (shift: "morning" | "evening" | "night", field: "start" | "end", value: string) => {
     const current = config.customShiftTimes;
@@ -600,6 +611,20 @@ export default function CustomizeScreen() {
           )}
           {config.holidays.map((h) => (
             <View key={h.id} style={[styles.holidayRow, { borderBottomColor: colors.border }]}>
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  toggleHolidaySelection(h.id);
+                }}
+                hitSlop={6}
+                style={styles.holidayCheckbox}
+              >
+                <Ionicons
+                  name={selectedHolidayIds.has(h.id) ? "checkbox" : "square-outline"}
+                  size={22}
+                  color={selectedHolidayIds.has(h.id) ? colors.accent : colors.textSecondary}
+                />
+              </Pressable>
               <View style={styles.holidayInfo}>
                 <View style={styles.holidayNameRow}>
                   <View style={[styles.holidayDot, { backgroundColor: h.color }]} />
@@ -614,6 +639,7 @@ export default function CustomizeScreen() {
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   removeHoliday(h.id);
+                  setSelectedHolidayIds((prev) => { const next = new Set(prev); next.delete(h.id); return next; });
                 }}
                 hitSlop={8}
               >
@@ -637,12 +663,16 @@ export default function CustomizeScreen() {
             <View style={{ height: 8 }} />
             <Pressable
               onPress={() => { playSound("success"); shareHolidays(); }}
-              disabled={sharingLoading}
-              style={[styles.shareBtn, { backgroundColor: colors.surfaceSecondary, opacity: sharingLoading ? 0.6 : 1 }]}
+              disabled={sharingLoading || selectedHolidayIds.size === 0}
+              style={[styles.shareBtn, { backgroundColor: colors.surfaceSecondary, opacity: sharingLoading || selectedHolidayIds.size === 0 ? 0.5 : 1 }]}
             >
               <Ionicons name="link-outline" size={20} color={colors.accent} />
               <Text style={[styles.shareBtnText, { color: colors.accent }]}>
-                {sharingLoading ? t("جاري المشاركة...", "Sharing...") : t("مشاركة الإجازات كرابط", "Share Holidays as Link")}
+                {sharingLoading
+                  ? t("جاري المشاركة...", "Sharing...")
+                  : selectedHolidayIds.size > 0
+                    ? t(`مشاركة المحدد (${selectedHolidayIds.size})`, `Share Selected (${selectedHolidayIds.size})`)
+                    : t("حدد إجازات للمشاركة", "Select holidays to share")}
               </Text>
             </Pressable>
           </>
@@ -850,10 +880,13 @@ const styles = StyleSheet.create({
   holidayRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
+    gap: 10,
+  },
+  holidayCheckbox: {
+    padding: 2,
   },
   holidayInfo: { gap: 2, flex: 1 },
   holidayNameRow: {

@@ -70,7 +70,7 @@ export default function DayDetailSheet() {
   const dayName = dayFullNames[d.getDay()];
   const formattedDate = `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 
-  const holiday = config.holidays.find((h) => date >= h.startDate && date <= h.endDate);
+  const holidays = config.holidays.filter((h) => date >= h.startDate && date <= h.endDate);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     morning: "sunny",
@@ -111,12 +111,12 @@ export default function DayDetailSheet() {
         <Text style={[styles.dayName, { color: colors.text }]}>{dayName}</Text>
         <Text style={[styles.dateText, { color: colors.textSecondary }]}>{formattedDate}</Text>
 
-        {holiday && (
-          <View style={[styles.holidayBanner, { backgroundColor: "#FFF3E0" }]}>
-            <Ionicons name="star" size={16} color="#FF9800" />
-            <Text style={styles.holidayBannerText}>{holiday.name}</Text>
+        {holidays.map((h) => (
+          <View key={h.id} style={[styles.holidayBanner, { backgroundColor: (h.color || "#FF9800") + "20" }]}>
+            <Ionicons name="star" size={16} color={h.color || "#FF9800"} />
+            <Text style={[styles.holidayBannerText, { color: h.color || "#FF9800" }]}>{h.name}</Text>
           </View>
-        )}
+        ))}
 
         <View style={[styles.shiftCard, { backgroundColor: shiftColor.bg }]}>
           <Text style={[styles.shiftLabel, { color: shiftColor.color }]}>
