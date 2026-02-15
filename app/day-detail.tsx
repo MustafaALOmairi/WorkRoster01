@@ -220,13 +220,13 @@ export default function DayDetailSheet() {
                 </View>
                 <Text style={[styles.timePickerColon, { color: colors.text }]}>:</Text>
                 <View style={styles.timePickerUnit}>
-                  <Pressable onPress={() => adjustMinute(5)} hitSlop={8}>
+                  <Pressable onPress={() => adjustMinute(1)} hitSlop={8}>
                     <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
                   </Pressable>
                   <Text style={[styles.timePickerValue, { color: colors.text }]}>
                     {String(parsedMinute).padStart(2, "0")}
                   </Text>
-                  <Pressable onPress={() => adjustMinute(-5)} hitSlop={8}>
+                  <Pressable onPress={() => adjustMinute(-1)} hitSlop={8}>
                     <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
                   </Pressable>
                   <Text style={[styles.timePickerUnitLabel, { color: colors.textSecondary }]}>

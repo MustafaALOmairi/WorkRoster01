@@ -322,7 +322,7 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
 
-      <View {...panResponder.panHandlers}>
+      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
         {themeBgImage ? (
           <View style={styles.calendarWithBg}>
             <Image
