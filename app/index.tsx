@@ -75,8 +75,9 @@ function CalendarDayCell({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.dayCell,
+        { backgroundColor: shiftColor.bg },
         (isToday || isSelected) && [styles.dayCellHighlight, { borderColor: "#5B9BD5" }],
-        isSelected && { backgroundColor: "rgba(91,155,213,0.15)" },
+        isSelected && { backgroundColor: shiftColor.bg },
         { opacity: pressed ? 0.7 : 1 },
       ]}
     >

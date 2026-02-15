@@ -238,8 +238,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   logo: {
-    width: 48,
-    height: 48,
+    width: 72,
+    height: 72,
+    borderRadius: 16,
   },
   menuItemsContainer: {
     flex: 1,
