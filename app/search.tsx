@@ -66,16 +66,48 @@ function ResultRow({ item, colors }: { item: DayResult; colors: ReturnType<typeo
   );
 }
 
+function tryParseUserDate(input: string): string | null {
+  input = input.trim();
+  const slashMatch = input.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (slashMatch) {
+    const day = parseInt(slashMatch[1], 10);
+    const month = parseInt(slashMatch[2], 10);
+    const year = parseInt(slashMatch[3], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+      const d = new Date(year, month - 1, day);
+      if (d.getDate() === day && d.getMonth() === month - 1) {
+        return formatDate(d);
+      }
+    }
+    return null;
+  }
+  const isoMatch = input.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10);
+    const day = parseInt(isoMatch[3], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31 && year >= 1900 && year <= 2100) {
+      const d = new Date(year, month - 1, day);
+      if (d.getDate() === day && d.getMonth() === month - 1) {
+        return formatDate(d);
+      }
+    }
+    return null;
+  }
+  return null;
+}
+
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { language, t, isDark } = useAppTheme();
   const { config } = useShiftConfig();
   const { playSound } = useSound();
-  const [searchMode, setSearchMode] = useState<"single" | "range">("single");
+  const [searchMode, setSearchMode] = useState<"single" | "range" | "holidays">("single");
   const [singleDate, setSingleDate] = useState(formatDate(new Date()));
   const [fromDate, setFromDate] = useState(formatDate(new Date()));
   const [toDate, setToDate] = useState(formatDate(new Date()));
+  const [dateInputText, setDateInputText] = useState("");
 
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
   const dayFullNames = language === "ar" ? DAY_FULL_AR : DAY_FULL_EN;
@@ -91,6 +123,15 @@ export default function SearchScreen() {
   const formatDisplayDate = (dateStr: string) => {
     const d = parseDate(dateStr);
     return `${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const handleDateInputSubmit = () => {
+    const parsed = tryParseUserDate(dateInputText);
+    if (parsed) {
+      setSingleDate(parsed);
+      setDateInputText("");
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
   };
 
   const singleResult = useMemo((): DayResult | null => {
@@ -176,6 +217,19 @@ export default function SearchScreen() {
             {t("فترة زمنية", "Date Range")}
           </Text>
         </Pressable>
+        <Pressable
+          onPress={() => {
+            if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            playSound("toggle");
+            setSearchMode("holidays");
+          }}
+          style={[styles.modeBtn, searchMode === "holidays" && { backgroundColor: colors.accent }]}
+        >
+          <Ionicons name="star-outline" size={16} color={searchMode === "holidays" ? "#FFF" : colors.text} />
+          <Text style={[styles.modeBtnText, { color: searchMode === "holidays" ? "#FFF" : colors.text }]}>
+            {t("إجازات", "Holidays")}
+          </Text>
+        </Pressable>
       </View>
 
       {searchMode === "single" && (
@@ -194,6 +248,17 @@ export default function SearchScreen() {
               <Ionicons name="add-circle-outline" size={32} color={colors.accent} />
             </Pressable>
           </View>
+          <TextInput
+            style={[styles.dateTextInput, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={dateInputText}
+            onChangeText={setDateInputText}
+            placeholder={t("اكتب تاريخ مثل 15/2/2026", "Type date e.g. 15/2/2026")}
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            returnKeyType="go"
+            onSubmitEditing={handleDateInputSubmit}
+            textAlign="center"
+          />
         </View>
       )}
 
@@ -288,6 +353,48 @@ export default function SearchScreen() {
           />
         </View>
       )}
+
+      {searchMode === "holidays" && (
+        <View style={{ flex: 1 }}>
+          {config.holidays.length === 0 ? (
+            <View style={styles.emptyHolidays}>
+              <Ionicons name="star-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyHolidaysText, { color: colors.textSecondary }]}>
+                {t("لا توجد إجازات مضافة", "No holidays added")}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={config.holidays}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 40, gap: 8 }}
+              showsVerticalScrollIndicator={false}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push({ pathname: "/day-detail", params: { date: item.startDate } });
+                  }}
+                  style={({ pressed }) => [
+                    styles.holidayRow,
+                    { backgroundColor: cardBg, opacity: pressed ? 0.7 : 1 },
+                  ]}
+                >
+                  <View style={[styles.holidayDot, { backgroundColor: item.color }]} />
+                  <View style={styles.holidayInfo}>
+                    <Text style={[styles.holidayName, { color: colors.text }]}>{item.name}</Text>
+                    <Text style={[styles.holidayDateText, { color: colors.textSecondary }]}>
+                      {formatDisplayDate(item.startDate)}
+                      {item.startDate !== item.endDate ? ` → ${formatDisplayDate(item.endDate)}` : ""}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                </Pressable>
+              )}
+            />
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -323,7 +430,7 @@ const styles = StyleSheet.create({
   },
   modeBtnText: {
     fontFamily: "Cairo_600SemiBold",
-    fontSize: 13,
+    fontSize: 12,
   },
   datePickerCard: {
     marginHorizontal: 16,
@@ -345,6 +452,15 @@ const styles = StyleSheet.create({
   datePickerValue: {
     fontFamily: "Cairo_700Bold",
     fontSize: 18,
+  },
+  dateTextInput: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginTop: 4,
   },
   rangeSeparator: {
     borderTopWidth: 1,
@@ -426,5 +542,36 @@ const styles = StyleSheet.create({
   resultShiftText: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 12,
+  },
+  emptyHolidays: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+  },
+  emptyHolidaysText: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 14,
+  },
+  holidayRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 14,
+    borderRadius: 12,
+    gap: 12,
+  },
+  holidayDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  holidayInfo: { flex: 1, gap: 2 },
+  holidayName: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 15,
+  },
+  holidayDateText: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 13,
   },
 });

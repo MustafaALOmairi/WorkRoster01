@@ -128,9 +128,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 24,
+    width: 160,
+    height: 160,
+    borderRadius: 36,
   },
   appName: {
     fontFamily: "Cairo_700Bold",

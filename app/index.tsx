@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,7 @@ import {
   Platform,
   Image,
   ImageBackground,
+  PanResponder,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -143,6 +144,38 @@ export default function CalendarScreen() {
       router.push(route as any);
     }, 100);
   };
+
+  const goToPrevMonthRef = useRef(goToPrevMonth);
+  goToPrevMonthRef.current = goToPrevMonth;
+  const goToNextMonthRef = useRef(goToNextMonth);
+  goToNextMonthRef.current = goToNextMonth;
+  const languageRef = useRef(language);
+  languageRef.current = language;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 15 && Math.abs(gestureState.dy) < Math.abs(gestureState.dx);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const isArabic = languageRef.current === "ar";
+        if (gestureState.dx > 50) {
+          if (isArabic) {
+            goToNextMonthRef.current();
+          } else {
+            goToPrevMonthRef.current();
+          }
+        } else if (gestureState.dx < -50) {
+          if (isArabic) {
+            goToPrevMonthRef.current();
+          } else {
+            goToNextMonthRef.current();
+          }
+        }
+      },
+    })
+  ).current;
 
   if (!isLoaded) return null;
 
@@ -289,20 +322,22 @@ export default function CalendarScreen() {
         </Pressable>
       </View>
 
-      {themeBgImage ? (
-        <View style={styles.calendarWithBg}>
-          <Image
-            source={{ uri: themeBgImage }}
-            style={[StyleSheet.absoluteFill, { opacity: themeBgOpacity }]}
-            resizeMode="cover"
-          />
-          {calendarContent}
-        </View>
-      ) : (
-        <View style={styles.calendarWithBg}>
-          {calendarContent}
-        </View>
-      )}
+      <View {...panResponder.panHandlers}>
+        {themeBgImage ? (
+          <View style={styles.calendarWithBg}>
+            <Image
+              source={{ uri: themeBgImage }}
+              style={[StyleSheet.absoluteFill, { opacity: themeBgOpacity }]}
+              resizeMode="cover"
+            />
+            {calendarContent}
+          </View>
+        ) : (
+          <View style={styles.calendarWithBg}>
+            {calendarContent}
+          </View>
+        )}
+      </View>
 
       <View style={[styles.detailCard, { backgroundColor: cardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
@@ -338,6 +373,15 @@ export default function CalendarScreen() {
               {t("يوم راحة", "Day Off")}
             </Text>
           )}
+
+          {notes[selectedDate]?.text ? (
+            <View style={styles.notePreview}>
+              <Ionicons name="document-text-outline" size={14} color={subtextColor} />
+              <Text style={[styles.notePreviewText, { color: subtextColor }]} numberOfLines={2}>
+                {notes[selectedDate].text}
+              </Text>
+            </View>
+          ) : null}
         </Pressable>
 
         <View style={styles.detailActions}>
@@ -492,6 +536,18 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_400Regular",
     fontSize: 15,
     marginTop: 2,
+  },
+  notePreview: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 6,
+    marginTop: 4,
+  },
+  notePreviewText: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 13,
+    flex: 1,
+    lineHeight: 18,
   },
   detailActions: {
     marginTop: 16,

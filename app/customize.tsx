@@ -273,12 +273,16 @@ function AddHolidayModal({
   visible,
   onClose,
   onAdd,
+  onEdit,
+  editingHoliday,
   colors,
   language,
 }: {
   visible: boolean;
   onClose: () => void;
   onAdd: (holiday: Holiday) => void;
+  onEdit?: (holiday: Holiday) => void;
+  editingHoliday?: Holiday | null;
   colors: ReturnType<typeof useColors>;
   language: string;
 }) {
@@ -289,11 +293,30 @@ function AddHolidayModal({
   const [showColorPicker, setShowColorPicker] = useState(false);
   const t = (ar: string, en: string) => language === "ar" ? ar : en;
 
-  const handleAdd = () => {
+  React.useEffect(() => {
+    if (editingHoliday) {
+      setName(editingHoliday.name);
+      setStartDateVal(editingHoliday.startDate);
+      setEndDateVal(editingHoliday.endDate);
+      setHolidayColor(editingHoliday.color);
+    } else {
+      setName("");
+      setStartDateVal(formatDate(new Date()));
+      setEndDateVal(formatDate(new Date()));
+      setHolidayColor("#FF9800");
+    }
+    setShowColorPicker(false);
+  }, [editingHoliday, visible]);
+
+  const handleSubmit = () => {
     if (!name.trim()) return;
     const finalEnd = endDateVal < startDateVal ? startDateVal : endDateVal;
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    onAdd({ id, name: name.trim(), startDate: startDateVal, endDate: finalEnd, color: holidayColor });
+    if (editingHoliday && onEdit) {
+      onEdit({ id: editingHoliday.id, name: name.trim(), startDate: startDateVal, endDate: finalEnd, color: holidayColor });
+    } else {
+      const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      onAdd({ id, name: name.trim(), startDate: startDateVal, endDate: finalEnd, color: holidayColor });
+    }
     setName("");
     setStartDateVal(formatDate(new Date()));
     setEndDateVal(formatDate(new Date()));
@@ -301,12 +324,14 @@ function AddHolidayModal({
     onClose();
   };
 
+  const isEditing = !!editingHoliday;
+
   return (
     <Modal visible={visible} transparent animationType="fade">
       <Pressable style={styles.modalOverlay} onPress={onClose}>
         <Pressable style={[styles.modalContent, { backgroundColor: colors.surface }]} onPress={() => {}}>
           <Text style={[styles.modalTitle, { color: colors.text }]}>
-            {t("إضافة إجازة", "Add Holiday")}
+            {isEditing ? t("تعديل الإجازة", "Edit Holiday") : t("إضافة إجازة", "Add Holiday")}
           </Text>
           <TextInput
             style={[styles.holidayInput, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
@@ -340,9 +365,9 @@ function AddHolidayModal({
               ))}
             </View>
           )}
-          <Pressable onPress={handleAdd} style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}>
+          <Pressable onPress={handleSubmit} style={[styles.holidayAddBtn, { backgroundColor: colors.accent }]}>
             <Ionicons name="checkmark" size={18} color="#FFF" />
-            <Text style={styles.holidayAddBtnText}>{t("إضافة", "Add")}</Text>
+            <Text style={styles.holidayAddBtnText}>{isEditing ? t("تحديث", "Update") : t("إضافة", "Add")}</Text>
           </Pressable>
           <Pressable onPress={onClose} style={[styles.modalCloseBtn, { backgroundColor: colors.surfaceSecondary }]}>
             <Ionicons name="close" size={20} color={colors.text} />
@@ -404,13 +429,14 @@ export default function CustomizeScreen() {
   const {
     language, setCustomShiftColor, shiftColors, t,
   } = useAppTheme();
-  const { config, updateConfig, addHoliday, removeHoliday } = useShiftConfig();
+  const { config, updateConfig, addHoliday, updateHoliday, removeHoliday } = useShiftConfig();
   const { playSound } = useSound();
   const [colorPickerShift, setColorPickerShift] = useState<keyof ShiftColors | null>(null);
   const [showAddHoliday, setShowAddHoliday] = useState(false);
   const [showExportRange, setShowExportRange] = useState(false);
   const [sharingLoading, setSharingLoading] = useState(false);
   const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set());
+  const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
 
   const toggleHolidaySelection = (id: string) => {
     setSelectedHolidayIds((prev) => {
@@ -638,6 +664,16 @@ export default function CustomizeScreen() {
               <Pressable
                 onPress={() => {
                   if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setEditingHoliday(h);
+                  setShowAddHoliday(true);
+                }}
+                hitSlop={8}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.accent} />
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   removeHoliday(h.id);
                   setSelectedHolidayIds((prev) => { const next = new Set(prev); next.delete(h.id); return next; });
                 }}
@@ -704,8 +740,10 @@ export default function CustomizeScreen() {
 
       <AddHolidayModal
         visible={showAddHoliday}
-        onClose={() => setShowAddHoliday(false)}
+        onClose={() => { setShowAddHoliday(false); setEditingHoliday(null); }}
         onAdd={addHoliday}
+        onEdit={updateHoliday}
+        editingHoliday={editingHoliday}
         colors={colors}
         language={language}
       />

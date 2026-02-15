@@ -40,12 +40,14 @@ export default function DayDetailSheet() {
   const existingNote = date ? getNote(date) : undefined;
   const [noteText, setNoteText] = useState(existingNote?.text || "");
   const [reminderEnabled, setReminderEnabled] = useState(existingNote?.reminderEnabled || false);
+  const [reminderTime, setReminderTime] = useState(existingNote?.reminderTime || "08:00");
 
   useEffect(() => {
     if (date) {
       const n = getNote(date);
       setNoteText(n?.text || "");
       setReminderEnabled(n?.reminderEnabled || false);
+      setReminderTime(n?.reminderTime || "08:00");
     }
   }, [date]);
 
@@ -79,6 +81,21 @@ export default function DayDetailSheet() {
     rest: "leaf",
   };
 
+  const parsedHour = parseInt(reminderTime.split(":")[0], 10) || 0;
+  const parsedMinute = parseInt(reminderTime.split(":")[1], 10) || 0;
+
+  const adjustHour = (delta: number) => {
+    const newHour = ((parsedHour + delta) % 24 + 24) % 24;
+    setReminderTime(`${String(newHour).padStart(2, "0")}:${String(parsedMinute).padStart(2, "0")}`);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const adjustMinute = (delta: number) => {
+    const newMinute = ((parsedMinute + delta) % 60 + 60) % 60;
+    setReminderTime(`${String(parsedHour).padStart(2, "0")}:${String(newMinute).padStart(2, "0")}`);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handleSaveNote = () => {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     playSound("success");
@@ -86,7 +103,7 @@ export default function DayDetailSheet() {
       setNote(date, {
         text: noteText.trim(),
         reminderEnabled,
-        reminderTime: "08:00",
+        reminderTime,
       });
     } else {
       deleteNote(date);
@@ -182,9 +199,42 @@ export default function DayDetailSheet() {
             />
           </View>
           {reminderEnabled && (
-            <Text style={[styles.reminderInfo, { color: colors.textSecondary }]}>
-              {t("سيتم تذكيرك في بداية هذا اليوم", "You'll be reminded at the start of this day")}
-            </Text>
+            <View style={styles.timePickerSection}>
+              <Text style={[styles.timePickerLabel, { color: colors.textSecondary }]}>
+                {t("وقت التذكير", "Reminder Time")}
+              </Text>
+              <View style={styles.timePickerRow}>
+                <View style={styles.timePickerUnit}>
+                  <Pressable onPress={() => adjustHour(1)} hitSlop={8}>
+                    <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
+                  </Pressable>
+                  <Text style={[styles.timePickerValue, { color: colors.text }]}>
+                    {String(parsedHour).padStart(2, "0")}
+                  </Text>
+                  <Pressable onPress={() => adjustHour(-1)} hitSlop={8}>
+                    <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
+                  </Pressable>
+                  <Text style={[styles.timePickerUnitLabel, { color: colors.textSecondary }]}>
+                    {t("ساعة", "Hour")}
+                  </Text>
+                </View>
+                <Text style={[styles.timePickerColon, { color: colors.text }]}>:</Text>
+                <View style={styles.timePickerUnit}>
+                  <Pressable onPress={() => adjustMinute(5)} hitSlop={8}>
+                    <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
+                  </Pressable>
+                  <Text style={[styles.timePickerValue, { color: colors.text }]}>
+                    {String(parsedMinute).padStart(2, "0")}
+                  </Text>
+                  <Pressable onPress={() => adjustMinute(-5)} hitSlop={8}>
+                    <Ionicons name="remove-circle-outline" size={28} color={colors.accent} />
+                  </Pressable>
+                  <Text style={[styles.timePickerUnitLabel, { color: colors.textSecondary }]}>
+                    {t("دقيقة", "Minute")}
+                  </Text>
+                </View>
+              </View>
+            </View>
           )}
         </View>
 
@@ -317,6 +367,38 @@ const styles = StyleSheet.create({
   reminderInfo: {
     fontFamily: "Cairo_400Regular",
     fontSize: 12,
+  },
+  timePickerSection: {
+    alignItems: "center",
+    gap: 8,
+    paddingTop: 4,
+  },
+  timePickerLabel: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 12,
+  },
+  timePickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
+  timePickerUnit: {
+    alignItems: "center",
+    gap: 4,
+  },
+  timePickerValue: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 28,
+  },
+  timePickerColon: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 28,
+    marginBottom: 24,
+  },
+  timePickerUnitLabel: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 11,
   },
   saveBtn: {
     flexDirection: "row",

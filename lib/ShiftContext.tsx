@@ -28,6 +28,7 @@ interface ShiftContextValue {
   config: ShiftConfig;
   updateConfig: (config: Partial<ShiftConfig>) => void;
   addHoliday: (holiday: Holiday) => void;
+  updateHoliday: (holiday: Holiday) => void;
   removeHoliday: (id: string) => void;
   isHolidayDate: (dateStr: string) => Holiday | undefined;
   isLoaded: boolean;
@@ -94,6 +95,14 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const updateHoliday = (holiday: Holiday) => {
+    setConfig((prev) => {
+      const next = { ...prev, holidays: prev.holidays.map((h) => h.id === holiday.id ? holiday : h) };
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  };
+
   const removeHoliday = (id: string) => {
     setConfig((prev) => {
       const next = { ...prev, holidays: prev.holidays.filter((h) => h.id !== id) };
@@ -109,7 +118,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ config, updateConfig, addHoliday, removeHoliday, isHolidayDate, isLoaded }),
+    () => ({ config, updateConfig, addHoliday, updateHoliday, removeHoliday, isHolidayDate, isLoaded }),
     [config, isLoaded]
   );
 
