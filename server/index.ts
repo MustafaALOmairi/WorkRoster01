@@ -170,7 +170,13 @@ function configureExpoAndLanding(app: express.Application) {
   const landingPageTemplate = fs.readFileSync(templatePath, "utf-8");
   const appName = getAppName();
 
+  const distDir = path.resolve(process.cwd(), "dist");
+  const hasWebBuild = fs.existsSync(distDir) && fs.existsSync(path.join(distDir, "index.html"));
+
   log("Serving static Expo files with dynamic manifest routing");
+  if (hasWebBuild) {
+    log("Web build detected in dist/ - serving web app for browser requests");
+  }
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.path.startsWith("/api")) {
@@ -178,6 +184,9 @@ function configureExpoAndLanding(app: express.Application) {
     }
 
     if (req.path.startsWith("/import-holidays/")) {
+      if (hasWebBuild) {
+        return res.sendFile(path.join(distDir, "index.html"));
+      }
       return serveLandingPage({
         req,
         res,
@@ -196,6 +205,9 @@ function configureExpoAndLanding(app: express.Application) {
     }
 
     if (req.path === "/") {
+      if (hasWebBuild) {
+        return res.sendFile(path.join(distDir, "index.html"));
+      }
       return serveLandingPage({
         req,
         res,
@@ -208,6 +220,19 @@ function configureExpoAndLanding(app: express.Application) {
   });
 
   app.use("/assets", express.static(path.resolve(process.cwd(), "assets")));
+  if (hasWebBuild) {
+    app.use(express.static(distDir));
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (!req.path.startsWith("/api") && !req.path.startsWith("/manifest")) {
+        const filePath = path.join(distDir, req.path);
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          return res.sendFile(filePath);
+        }
+        return res.sendFile(path.join(distDir, "index.html"));
+      }
+      next();
+    });
+  }
   app.use(express.static(path.resolve(process.cwd(), "static-build")));
 
   log("Expo routing: Checking expo-platform header on / and /manifest");
