@@ -559,7 +559,7 @@ export default function CustomizeScreen() {
     } finally {
       setImportLoading(false);
     }
-  }, [importCode, language]);
+  }, [importCode, language, addHoliday, playSound]);
 
   const updateShiftTime = (shift: "morning" | "evening" | "night", field: "start" | "end", value: string) => {
     const current = config.customShiftTimes;
@@ -758,6 +758,7 @@ export default function CustomizeScreen() {
           </Text>
           <View style={styles.importCodeRow}>
             <TextInput
+              testID="import-code-input"
               style={[styles.importCodeInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
               value={importCode}
               onChangeText={(v) => setImportCode(v.toUpperCase())}
@@ -767,6 +768,9 @@ export default function CustomizeScreen() {
               maxLength={6}
             />
             <Pressable
+              testID="import-code-btn"
+              accessibilityRole="button"
+              accessibilityLabel="Import holidays"
               onPress={importHolidaysByCode}
               disabled={importLoading || importCode.trim().length === 0}
               style={[styles.importCodeBtn, { backgroundColor: colors.accent, opacity: importLoading || importCode.trim().length === 0 ? 0.5 : 1 }]}
@@ -774,7 +778,7 @@ export default function CustomizeScreen() {
               {importLoading ? (
                 <Text style={styles.importCodeBtnText}>{t("...", "...")}</Text>
               ) : (
-                <Ionicons name="arrow-down-circle-outline" size={22} color="#FFF" />
+                <Ionicons name="arrow-down-circle-outline" size={22} color="#FFF" style={{ pointerEvents: "none" as any }} />
               )}
             </Pressable>
           </View>
