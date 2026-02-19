@@ -108,6 +108,9 @@ export default function DayDetailSheet() {
     } else {
       deleteNote(date);
     }
+    setTimeout(() => {
+      router.back();
+    }, 200);
   };
 
   return (

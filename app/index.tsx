@@ -292,7 +292,7 @@ export default function CalendarScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
+    <View style={[styles.container, { backgroundColor: bgColor, paddingTop: Platform.OS === "web" ? webTopInset : insets.top }]}>
       <View style={styles.topHeader}>
         <Pressable
           onPress={() => {
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingVertical: 6,
   },
   monthNavCenter: {
     flexDirection: "row",

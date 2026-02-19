@@ -1,23 +1,16 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import OpenAI from "openai";
+import { Pool } from "pg";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
-interface SharedHolidayBundle {
-  holidays: Array<{
-    name: string;
-    startDate: string;
-    endDate: string;
-    color: string;
-  }>;
-  createdAt: number;
-}
-
-const sharedBundles = new Map<string, SharedHolidayBundle>();
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
@@ -110,7 +103,7 @@ Rules:
     }
   });
 
-  app.post("/api/holidays/share", (req: Request, res: Response) => {
+  app.post("/api/holidays/share", async (req: Request, res: Response) => {
     try {
       const { holidays } = req.body;
       if (!holidays || !Array.isArray(holidays) || holidays.length === 0) {
@@ -118,21 +111,34 @@ Rules:
         return;
       }
       const id = generateId();
-      sharedBundles.set(id, { holidays, createdAt: Date.now() });
+      await pool.query(
+        "INSERT INTO shared_holidays (id, holidays, created_at) VALUES ($1, $2, $3)",
+        [id, JSON.stringify(holidays), Date.now()]
+      );
       res.json({ id, url: `/import-holidays/${id}` });
-    } catch {
+    } catch (err: any) {
+      console.error("Share holidays error:", err?.message);
       res.status(500).json({ error: "Failed to share holidays" });
     }
   });
 
-  app.get("/api/holidays/share/:id", (req: Request, res: Response) => {
-    const { id } = req.params;
-    const bundle = sharedBundles.get(id);
-    if (!bundle) {
-      res.status(404).json({ error: "Holidays not found" });
-      return;
+  app.get("/api/holidays/share/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const result = await pool.query(
+        "SELECT holidays, created_at FROM shared_holidays WHERE id = $1",
+        [id]
+      );
+      if (result.rows.length === 0) {
+        res.status(404).json({ error: "Holidays not found" });
+        return;
+      }
+      const row = result.rows[0];
+      res.json({ holidays: row.holidays, createdAt: row.created_at });
+    } catch (err: any) {
+      console.error("Get shared holidays error:", err?.message);
+      res.status(500).json({ error: "Failed to get holidays" });
     }
-    res.json(bundle);
   });
 
   const httpServer = createServer(app);
