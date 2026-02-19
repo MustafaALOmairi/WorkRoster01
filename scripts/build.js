@@ -572,7 +572,7 @@ function buildWebVersion(domain) {
       stdio: "inherit",
       env: {
         ...process.env,
-        EXPO_PUBLIC_DOMAIN: `${domain}:5000`,
+        EXPO_PUBLIC_DOMAIN: domain,
       },
     });
 
