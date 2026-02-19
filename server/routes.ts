@@ -12,8 +12,13 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
+function generateShortCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -110,12 +115,12 @@ Rules:
         res.status(400).json({ error: "No holidays provided" });
         return;
       }
-      const id = generateId();
+      const code = generateShortCode();
       await pool.query(
         "INSERT INTO shared_holidays (id, holidays, created_at) VALUES ($1, $2, $3)",
-        [id, JSON.stringify(holidays), Date.now()]
+        [code, JSON.stringify(holidays), Date.now()]
       );
-      res.json({ id, url: `/import-holidays/${id}` });
+      res.json({ code });
     } catch (err: any) {
       console.error("Share holidays error:", err?.message);
       res.status(500).json({ error: "Failed to share holidays" });

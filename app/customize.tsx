@@ -436,6 +436,8 @@ export default function CustomizeScreen() {
   const [showExportRange, setShowExportRange] = useState(false);
   const [sharingLoading, setSharingLoading] = useState(false);
   const [selectedHolidayIds, setSelectedHolidayIds] = useState<Set<string>>(new Set());
+  const [importCode, setImportCode] = useState("");
+  const [importLoading, setImportLoading] = useState(false);
   const [editingHoliday, setEditingHoliday] = useState<Holiday | null>(null);
 
   const toggleHolidaySelection = (id: string) => {
@@ -506,16 +508,15 @@ export default function CustomizeScreen() {
       }));
       const res = await apiRequest("POST", "/api/holidays/share", { holidays: payload });
       const data = await res.json();
-      const baseUrl = getApiUrl();
-      const shareUrl = `${baseUrl}import-holidays/${data.id}`;
+      const code = data.code;
       try {
-        await Clipboard.setStringAsync(shareUrl);
+        await Clipboard.setStringAsync(code);
         Alert.alert(
-          t("تم النسخ", "Link Copied"),
-          t("تم نسخ رابط الإجازات. شاركه مع زملائك", "Holiday link copied. Share it with your colleagues")
+          t("تم النسخ", "Code Copied"),
+          t(`كود الإجازات: ${code}\nشاركه مع زملائك`, `Holiday code: ${code}\nShare it with your colleagues`)
         );
       } catch {
-        Alert.alert(t("رابط المشاركة", "Share Link"), shareUrl);
+        Alert.alert(t("كود المشاركة", "Share Code"), code);
       }
     } catch {
       Alert.alert(t("خطأ", "Error"), t("حدث خطأ أثناء المشاركة", "Sharing failed"));
@@ -523,6 +524,42 @@ export default function CustomizeScreen() {
       setSharingLoading(false);
     }
   }, [config.holidays, language, selectedHolidayIds]);
+
+  const importHolidaysByCode = useCallback(async () => {
+    const code = importCode.trim().toUpperCase();
+    if (!code) return;
+    setImportLoading(true);
+    try {
+      const res = await apiRequest("GET", `/api/holidays/share/${code}`);
+      const data = await res.json();
+      const holidays = data.holidays || [];
+      if (holidays.length === 0) {
+        Alert.alert(t("خطأ", "Error"), t("لم يتم العثور على إجازات", "No holidays found"));
+        return;
+      }
+      holidays.forEach((h: any) => {
+        const holiday: Holiday = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: h.name,
+          startDate: h.startDate,
+          endDate: h.endDate,
+          color: h.color,
+        };
+        addHoliday(holiday);
+      });
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playSound("success");
+      Alert.alert(
+        t("تمت الإضافة", "Added"),
+        t(`تم إضافة ${holidays.length} إجازات بنجاح`, `${holidays.length} holidays added successfully`)
+      );
+      setImportCode("");
+    } catch {
+      Alert.alert(t("خطأ", "Error"), t("الكود غير صحيح أو منتهي", "Invalid or expired code"));
+    } finally {
+      setImportLoading(false);
+    }
+  }, [importCode, language]);
 
   const updateShiftTime = (shift: "morning" | "evening" | "night", field: "start" | "end", value: string) => {
     const current = config.customShiftTimes;
@@ -702,17 +739,46 @@ export default function CustomizeScreen() {
               disabled={sharingLoading || selectedHolidayIds.size === 0}
               style={[styles.shareBtn, { backgroundColor: colors.surfaceSecondary, opacity: sharingLoading || selectedHolidayIds.size === 0 ? 0.5 : 1 }]}
             >
-              <Ionicons name="link-outline" size={20} color={colors.accent} />
+              <Ionicons name="code-slash-outline" size={20} color={colors.accent} />
               <Text style={[styles.shareBtnText, { color: colors.accent }]}>
                 {sharingLoading
-                  ? t("جاري المشاركة...", "Sharing...")
+                  ? t("جاري إنشاء الكود...", "Generating code...")
                   : selectedHolidayIds.size > 0
-                    ? t(`مشاركة المحدد (${selectedHolidayIds.size})`, `Share Selected (${selectedHolidayIds.size})`)
-                    : t("حدد إجازات للمشاركة", "Select holidays to share")}
+                    ? t(`إنشاء كود (${selectedHolidayIds.size})`, `Generate Code (${selectedHolidayIds.size})`)
+                    : t("حدد إجازات لإنشاء كود", "Select holidays to generate code")}
               </Text>
             </Pressable>
           </>
         )}
+
+        <View style={{ height: 8 }} />
+        <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
+          <Text style={[styles.importCodeLabel, { color: colors.text }]}>
+            {t("كود الإجازة", "Holiday Code")}
+          </Text>
+          <View style={styles.importCodeRow}>
+            <TextInput
+              style={[styles.importCodeInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.surface }]}
+              value={importCode}
+              onChangeText={(v) => setImportCode(v.toUpperCase())}
+              placeholder={t("أدخل الكود هنا", "Enter code here")}
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="characters"
+              maxLength={6}
+            />
+            <Pressable
+              onPress={importHolidaysByCode}
+              disabled={importLoading || importCode.trim().length === 0}
+              style={[styles.importCodeBtn, { backgroundColor: colors.accent, opacity: importLoading || importCode.trim().length === 0 ? 0.5 : 1 }]}
+            >
+              {importLoading ? (
+                <Text style={styles.importCodeBtnText}>{t("...", "...")}</Text>
+              ) : (
+                <Ionicons name="arrow-down-circle-outline" size={22} color="#FFF" />
+              )}
+            </Pressable>
+          </View>
+        </View>
 
         <SectionHeader title={t("تصدير ومشاركة", "Export & Share")} colors={colors} />
         <View style={[styles.card, { backgroundColor: colors.surfaceSecondary }]}>
@@ -1076,6 +1142,43 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   holidayAddBtnText: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 14,
+    color: "#FFF",
+  },
+  importCodeLabel: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  importCodeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    paddingTop: 8,
+  },
+  importCodeInput: {
+    flex: 1,
+    fontFamily: "Cairo_700Bold",
+    fontSize: 18,
+    letterSpacing: 4,
+    textAlign: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  importCodeBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  importCodeBtnText: {
     fontFamily: "Cairo_700Bold",
     fontSize: 14,
     color: "#FFF",
