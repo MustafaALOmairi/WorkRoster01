@@ -36,6 +36,97 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
   return <Text style={[styles.sectionHeader, { color: colors.textSecondary }]}>{title}</Text>;
 }
 
+function DateInputPicker({
+  value,
+  onChange,
+  colors,
+  language,
+  label,
+}: {
+  value: string;
+  onChange: (date: string) => void;
+  colors: ReturnType<typeof useColors>;
+  language: string;
+  label?: string;
+}) {
+  const d = parseDate(value);
+  const [dayText, setDayText] = useState(String(d.getDate()));
+  const [monthText, setMonthText] = useState(String(d.getMonth() + 1));
+  const [yearText, setYearText] = useState(String(d.getFullYear()));
+
+  React.useEffect(() => {
+    const pd = parseDate(value);
+    setDayText(String(pd.getDate()));
+    setMonthText(String(pd.getMonth() + 1));
+    setYearText(String(pd.getFullYear()));
+  }, [value]);
+
+  const applyDate = (newDay: string, newMonth: string, newYear: string) => {
+    const dd = parseInt(newDay) || 1;
+    const mm = parseInt(newMonth) || 1;
+    const yy = parseInt(newYear) || new Date().getFullYear();
+    const result = new Date(yy, mm - 1, dd);
+    if (!isNaN(result.getTime())) {
+      onChange(formatDate(result));
+    }
+  };
+
+  return (
+    <View style={styles.datePickerRow}>
+      {label && <Text style={[styles.datePickerLabel, { color: colors.textSecondary }]}>{label}</Text>}
+      <View style={styles.dateInputRow}>
+        <View style={styles.dateInputGroup}>
+          <Text style={[styles.dateInputLabel, { color: colors.textSecondary }]}>
+            {language === "ar" ? "يوم" : "Day"}
+          </Text>
+          <TextInput
+            style={[styles.dateInputField, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={dayText}
+            onChangeText={setDayText}
+            onBlur={() => applyDate(dayText, monthText, yearText)}
+            onSubmitEditing={() => applyDate(dayText, monthText, yearText)}
+            keyboardType="number-pad"
+            maxLength={2}
+            textAlign="center"
+          />
+        </View>
+        <Text style={[styles.dateInputSep, { color: colors.textSecondary }]}>/</Text>
+        <View style={styles.dateInputGroup}>
+          <Text style={[styles.dateInputLabel, { color: colors.textSecondary }]}>
+            {language === "ar" ? "شهر" : "Month"}
+          </Text>
+          <TextInput
+            style={[styles.dateInputField, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={monthText}
+            onChangeText={setMonthText}
+            onBlur={() => applyDate(dayText, monthText, yearText)}
+            onSubmitEditing={() => applyDate(dayText, monthText, yearText)}
+            keyboardType="number-pad"
+            maxLength={2}
+            textAlign="center"
+          />
+        </View>
+        <Text style={[styles.dateInputSep, { color: colors.textSecondary }]}>/</Text>
+        <View style={styles.dateInputGroup}>
+          <Text style={[styles.dateInputLabel, { color: colors.textSecondary }]}>
+            {language === "ar" ? "سنة" : "Year"}
+          </Text>
+          <TextInput
+            style={[styles.dateInputField, styles.dateInputFieldYear, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={yearText}
+            onChangeText={setYearText}
+            onBlur={() => applyDate(dayText, monthText, yearText)}
+            onSubmitEditing={() => applyDate(dayText, monthText, yearText)}
+            keyboardType="number-pad"
+            maxLength={4}
+            textAlign="center"
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 function DatePicker({
   value,
   onChange,
@@ -341,8 +432,8 @@ function AddHolidayModal({
             placeholderTextColor={colors.textSecondary}
             textAlign={language === "ar" ? "right" : "left"}
           />
-          <DatePicker value={startDateVal} onChange={setStartDateVal} colors={colors} language={language} label={t("من", "From")} />
-          <DatePicker value={endDateVal} onChange={setEndDateVal} colors={colors} language={language} label={t("إلى", "To")} />
+          <DateInputPicker value={startDateVal} onChange={setStartDateVal} colors={colors} language={language} label={t("من", "From")} />
+          <DateInputPicker value={endDateVal} onChange={setEndDateVal} colors={colors} language={language} label={t("إلى", "To")} />
           <View style={styles.holidayColorSection}>
             <Text style={[styles.holidayColorLabel, { color: colors.textSecondary }]}>
               {t("اللون", "Color")}
@@ -509,15 +600,25 @@ export default function CustomizeScreen() {
       const res = await apiRequest("POST", "/api/holidays/share", { holidays: payload });
       const data = await res.json();
       const code = data.code;
-      try {
-        await Clipboard.setStringAsync(code);
-        Alert.alert(
-          t("تم النسخ", "Code Copied"),
-          t(`كود الإجازات: ${code}\nشاركه مع زملائك`, `Holiday code: ${code}\nShare it with your colleagues`)
-        );
-      } catch {
-        Alert.alert(t("كود المشاركة", "Share Code"), code);
+      let copied = false;
+      if (Platform.OS === "web" && navigator?.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(code);
+          copied = true;
+        } catch {}
       }
+      if (!copied) {
+        try {
+          await Clipboard.setStringAsync(code);
+          copied = true;
+        } catch {}
+      }
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      playSound("success");
+      Alert.alert(
+        copied ? t("تم النسخ ✓", "Copied ✓") : t("كود المشاركة", "Share Code"),
+        t(`كود الإجازات: ${code}\nشاركه مع زملائك`, `Holiday code: ${code}\nShare it with your colleagues`)
+      );
     } catch {
       Alert.alert(t("خطأ", "Error"), t("حدث خطأ أثناء المشاركة", "Sharing failed"));
     } finally {
@@ -1149,6 +1250,37 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     fontSize: 14,
     color: "#FFF",
+  },
+  dateInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    gap: 6,
+    justifyContent: "center",
+  },
+  dateInputGroup: {
+    alignItems: "center",
+    gap: 2,
+  },
+  dateInputLabel: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 11,
+  },
+  dateInputField: {
+    width: 52,
+    fontFamily: "Cairo_700Bold",
+    fontSize: 16,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  dateInputFieldYear: {
+    width: 72,
+  },
+  dateInputSep: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 18,
+    paddingBottom: 8,
   },
   importCodeLabel: {
     fontFamily: "Cairo_600SemiBold",
