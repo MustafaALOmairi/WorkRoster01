@@ -84,7 +84,7 @@ export default function AboutScreen() {
         <Pressable
           onPress={() => {
             playSound("tap");
-            Linking.openURL("https://buymeacoffee.com");
+            Linking.openURL("https://buymeacoffee.com/mustafahilc");
           }}
           style={[styles.donateBtn, { backgroundColor: "#FFDD00" }]}
         >
