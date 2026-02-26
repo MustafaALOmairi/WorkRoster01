@@ -99,7 +99,7 @@ function CalendarDayCell({
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { language, t, isDark, activeStoreTheme } = useAppTheme();
+  const { language, t, isDark, activeStoreTheme, setLanguage } = useAppTheme();
   const { config, isLoaded } = useShiftConfig();
   const { notes } = useNotes();
   const { playSound } = useSound();
@@ -317,9 +317,24 @@ export default function CalendarScreen() {
             <Ionicons name={language === "ar" ? "chevron-back" : "chevron-forward"} size={20} color={subtextColor} />
           </Pressable>
         </View>
-        <Pressable onPress={goToToday} hitSlop={12}>
-          <Ionicons name="calendar" size={22} color="#5B9BD5" />
-        </Pressable>
+        <View style={styles.headerRight}>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              playSound("tap");
+              setLanguage(language === "ar" ? "en" : "ar");
+            }}
+            hitSlop={8}
+            style={styles.langToggle}
+          >
+            <Text style={[styles.langToggleText, { color: "#5B9BD5" }]}>
+              {language === "ar" ? "EN" : "ع"}
+            </Text>
+          </Pressable>
+          <Pressable onPress={goToToday} hitSlop={12}>
+            <Ionicons name="calendar" size={22} color="#5B9BD5" />
+          </Pressable>
+        </View>
       </View>
 
       <View style={{ flex: 1 }} {...panResponder.panHandlers}>
@@ -441,6 +456,22 @@ const styles = StyleSheet.create({
   monthTitle: {
     fontFamily: "Cairo_700Bold",
     fontSize: 20,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  langToggle: {
+    borderWidth: 1.5,
+    borderColor: "#5B9BD5",
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  langToggleText: {
+    fontFamily: "Cairo_700Bold",
+    fontSize: 14,
   },
   weekDaysRow: {
     flexDirection: "row",
