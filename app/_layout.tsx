@@ -6,6 +6,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
+import { AuthProvider } from "@/lib/AuthContext";
+import { DataSyncProvider } from "@/lib/DataSync";
 import { ShiftProvider } from "@/lib/ShiftContext";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { NotesProvider } from "@/lib/NotesContext";
@@ -22,6 +24,7 @@ function RootLayoutNav() {
       <Stack.Screen name="customize" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="about" />
+      <Stack.Screen name="auth" />
       <Stack.Screen name="theme-store" />
       <Stack.Screen
         name="day-detail"
@@ -61,15 +64,19 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView>
           <KeyboardProvider>
-            <ThemeProvider>
-              <ShiftProvider>
-                <NotesProvider>
-                  <SoundProvider>
-                    <RootLayoutNav />
-                  </SoundProvider>
-                </NotesProvider>
-              </ShiftProvider>
-            </ThemeProvider>
+            <AuthProvider>
+              <ThemeProvider>
+                <ShiftProvider>
+                  <NotesProvider>
+                    <SoundProvider>
+                      <DataSyncProvider>
+                        <RootLayoutNav />
+                      </DataSyncProvider>
+                    </SoundProvider>
+                  </NotesProvider>
+                </ShiftProvider>
+              </ThemeProvider>
+            </AuthProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>

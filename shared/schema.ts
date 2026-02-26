@@ -11,6 +11,17 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
+export const userData = pgTable("user_data", {
+  userId: varchar("user_id")
+    .primaryKey()
+    .references(() => users.id),
+  shiftConfig: jsonb("shift_config"),
+  notes: jsonb("notes"),
+  themePrefs: jsonb("theme_prefs"),
+  aiThemes: jsonb("ai_themes"),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull(),
+});
+
 export const sharedHolidays = pgTable("shared_holidays", {
   id: varchar("id").primaryKey(),
   holidays: jsonb("holidays").notNull(),

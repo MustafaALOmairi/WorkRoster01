@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ShiftType, formatDate } from "./shift-utils";
+import { debouncedSync } from "./DataSync";
+import { useAuth } from "./AuthContext";
 
 export interface CustomShiftTimes {
   morning: { start: string; end: string };
@@ -55,6 +57,7 @@ const ShiftContext = createContext<ShiftContextValue | null>(null);
 export function ShiftProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ShiftConfig>(DEFAULT_CONFIG);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -79,10 +82,15 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoaded(true));
   }, []);
 
+  const saveConfig = (next: ShiftConfig) => {
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    debouncedSync(user);
+  };
+
   const updateConfig = (partial: Partial<ShiftConfig>) => {
     setConfig((prev) => {
       const next = { ...prev, ...partial };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      saveConfig(next);
       return next;
     });
   };
@@ -90,7 +98,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const addHoliday = (holiday: Holiday) => {
     setConfig((prev) => {
       const next = { ...prev, holidays: [...prev.holidays, holiday] };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      saveConfig(next);
       return next;
     });
   };
@@ -98,7 +106,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const updateHoliday = (holiday: Holiday) => {
     setConfig((prev) => {
       const next = { ...prev, holidays: prev.holidays.map((h) => h.id === holiday.id ? holiday : h) };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      saveConfig(next);
       return next;
     });
   };
@@ -106,7 +114,7 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const removeHoliday = (id: string) => {
     setConfig((prev) => {
       const next = { ...prev, holidays: prev.holidays.filter((h) => h.id !== id) };
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      saveConfig(next);
       return next;
     });
   };

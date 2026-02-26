@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { debouncedSync } from "./DataSync";
+import { useAuth } from "./AuthContext";
 
 export type ThemeMode = "light" | "dark";
 export type Language = "ar" | "en";
@@ -160,6 +162,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [prefs, setPrefs] = useState<AppPrefs>(DEFAULT_PREFS);
   const [aiGeneratedThemes, setAiGeneratedThemes] = useState<StoreTheme[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     Promise.all([
@@ -186,6 +189,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setPrefs((prev) => {
       const next = { ...prev, ...partial };
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      debouncedSync(user);
       return next;
     });
   };
@@ -244,6 +248,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setAiGeneratedThemes((prev) => {
           const next = [theme, ...prev].slice(0, 10);
           AsyncStorage.setItem(AI_THEMES_KEY, JSON.stringify(next));
+          debouncedSync(user);
           return next;
         });
       },
@@ -251,6 +256,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         setAiGeneratedThemes((prev) => {
           const next = prev.filter((t) => t.id !== themeId);
           AsyncStorage.setItem(AI_THEMES_KEY, JSON.stringify(next));
+          debouncedSync(user);
           return next;
         });
         if (prefs.storeThemeId === themeId) {

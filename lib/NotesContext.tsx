@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import { Platform, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
+import { debouncedSync } from "./DataSync";
+import { useAuth } from "./AuthContext";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -79,6 +81,7 @@ async function cancelReminder(dateKey: string) {
 export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Record<string, DayNote>>({});
   const [isLoaded, setIsLoaded] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
@@ -95,6 +98,7 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const saveNotes = (updated: Record<string, DayNote>) => {
     setNotes(updated);
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    debouncedSync(user);
   };
 
   const setNoteAndSchedule = (dateKey: string, note: DayNote) => {
