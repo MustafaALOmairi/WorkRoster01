@@ -52,7 +52,7 @@ function LoggedInView() {
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.iconSection}>
           <View style={[styles.iconCircle, { backgroundColor: colors.accent + "20" }]}>
             <Ionicons name="person-circle" size={64} color={colors.accent} />
@@ -123,7 +123,7 @@ function LoggedInView() {
             </>
           )}
         </Pressable>
-      </View>
+      </ScrollView>
     </View>
   );
 }
