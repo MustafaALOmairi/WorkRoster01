@@ -44,6 +44,7 @@ Preferred communication style: Simple, everyday language.
   - `shared_holidays` — id (6-char code), holidays (jsonb), created_at
   - `session` — auto-created by connect-pg-simple for session storage
 - **Database**: Drizzle configured for PostgreSQL. Migrate with `npm run db:push`
+- **IMPORTANT**: Never use `--force` flag with db:push as it can drop tables with data. For adding columns, use safe ALTER TABLE via SQL if needed. Always verify schema changes won't cause data loss before applying.
 
 ### Authentication Flow
 
