@@ -107,7 +107,7 @@ export function DrawerMenu({
   isDark,
 }: DrawerMenuProps) {
   const { playSound } = useSound();
-  const translateX = useSharedValue(DRAWER_WIDTH);
+  const translateX = useSharedValue(-DRAWER_WIDTH);
   const backdropOpacity = useSharedValue(0);
   const isRTL = language === "ar";
 
@@ -122,7 +122,7 @@ export function DrawerMenu({
         easing: Easing.out(Easing.cubic),
       });
     } else {
-      translateX.value = withTiming(DRAWER_WIDTH, {
+      translateX.value = withTiming(-DRAWER_WIDTH, {
         duration: 300,
         easing: Easing.in(Easing.cubic),
       });
@@ -134,7 +134,7 @@ export function DrawerMenu({
   }, [visible, translateX, backdropOpacity]);
 
   const drawerAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: isRTL ? -translateX.value : translateX.value }],
+    transform: [{ translateX: translateX.value }],
   }));
 
   const backdropAnimatedStyle = useAnimatedStyle(() => ({
@@ -222,10 +222,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     bottom: 0,
-    right: 0,
+    left: 0,
     elevation: 5,
     shadowColor: "#000",
-    shadowOffset: { width: -2, height: 0 },
+    shadowOffset: { width: 2, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
   },
