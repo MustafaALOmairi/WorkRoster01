@@ -5,7 +5,6 @@ import {
   View,
   Pressable,
   Image,
-  Linking,
   Platform,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -78,23 +77,7 @@ export default function AboutScreen() {
           </View>
         </View>
 
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-          {t("دعم التطبيق", "Support the App")}
-        </Text>
-        <Pressable
-          onPress={() => {
-            playSound("tap");
-            Linking.openURL("https://buymeacoffee.com/mustafahilc");
-          }}
-          style={[styles.donateBtn, { backgroundColor: "#FFDD00" }]}
-        >
-          <Ionicons name="heart" size={20} color="#000" />
-          <Text style={styles.donateBtnText}>
-            {t("تبرع لدعم التطبيق", "Donate to support the app")}
-          </Text>
-        </Pressable>
-
-        <Text style={[styles.copyright, { color: colors.textSecondary }]}>
+        <Text style={[styles.copyright, { color: colors.textSecondary, marginTop: 28 }]}>
           {"\u00A9"} 2026 ولد نيوتن
         </Text>
         <Text style={[styles.copyright, { color: colors.textSecondary }]}>
@@ -161,26 +144,6 @@ const styles = StyleSheet.create({
   infoValue: {
     fontFamily: "Cairo_400Regular",
     fontSize: 13,
-  },
-  sectionLabel: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    paddingTop: 28,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-  },
-  donateBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 16,
-    borderRadius: 16,
-  },
-  donateBtnText: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 16,
-    color: "#000",
   },
   copyright: {
     fontFamily: "Cairo_400Regular",
