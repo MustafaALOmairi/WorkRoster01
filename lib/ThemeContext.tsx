@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { debouncedSync } from "./DataSync";
+import { debouncedSync, useDataReload } from "./DataSync";
 import { useAuth } from "./AuthContext";
 
 export type ThemeMode = "light" | "dark";
@@ -163,8 +163,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [aiGeneratedThemes, setAiGeneratedThemes] = useState<StoreTheme[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const { user } = useAuth();
+  const { reloadTrigger } = useDataReload();
 
-  useEffect(() => {
+  const loadFromStorage = () => {
     Promise.all([
       AsyncStorage.getItem(STORAGE_KEY),
       AsyncStorage.getItem(AI_THEMES_KEY),
@@ -183,7 +184,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         }
       })
       .finally(() => setIsLoaded(true));
+  };
+
+  useEffect(() => {
+    loadFromStorage();
   }, []);
+
+  useEffect(() => {
+    if (reloadTrigger > 0) {
+      loadFromStorage();
+    }
+  }, [reloadTrigger]);
 
   const updatePrefs = (partial: Partial<AppPrefs>) => {
     setPrefs((prev) => {

@@ -39,7 +39,7 @@ Preferred communication style: Simple, everyday language.
 ### Shared Layer
 
 - **Schema**: `shared/schema.ts` defines PostgreSQL tables using Drizzle ORM with Zod validation:
-  - `users` — id, username (unique), password (bcrypt hashed)
+  - `users` — id, username (unique), email (optional), password (bcrypt hashed)
   - `user_data` — user_id (FK), shift_config (jsonb), notes (jsonb), theme_prefs (jsonb), ai_themes (jsonb), updated_at
   - `shared_holidays` — id (6-char code), holidays (jsonb), created_at
   - `session` — auto-created by connect-pg-simple for session storage
@@ -48,11 +48,14 @@ Preferred communication style: Simple, everyday language.
 ### Authentication Flow
 
 - App works fully without an account using local AsyncStorage
-- Users can optionally create an account (username + password, min 3/6 chars)
-- On login, server data is loaded into local storage if available
+- Users can optionally create an account (username + password + optional email, min 3/6 chars)
+- Login supports both username and email (auto-detected by `@` in input)
+- On login, server data is loaded into local storage if available, then `triggerReload()` forces all contexts to re-read from AsyncStorage
 - When logged in, any data changes are auto-synced to the server (debounced 3s)
 - Auth screen (`app/auth.tsx`) shows login/register form when logged out, account profile when logged in
 - Account accessible from drawer menu "Account" item
+- Session cookies: `secure: true`, `sameSite: "none"`, `trust proxy: 1` for proper cookie persistence behind Replit's HTTPS proxy
+- `DataSyncProvider` wraps all other providers (ThemeProvider, ShiftProvider, NotesProvider) and provides `reloadTrigger` context for cross-device data sync
 
 ### Shift Logic
 

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import { Platform, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
-import { debouncedSync } from "./DataSync";
+import { debouncedSync, useDataReload } from "./DataSync";
 import { useAuth } from "./AuthContext";
 
 Notifications.setNotificationHandler({
@@ -82,8 +82,9 @@ export function NotesProvider({ children }: { children: ReactNode }) {
   const [notes, setNotes] = useState<Record<string, DayNote>>({});
   const [isLoaded, setIsLoaded] = useState(false);
   const { user } = useAuth();
+  const { reloadTrigger } = useDataReload();
 
-  useEffect(() => {
+  const loadFromStorage = () => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
         if (stored) {
@@ -93,7 +94,17 @@ export function NotesProvider({ children }: { children: ReactNode }) {
         }
       })
       .finally(() => setIsLoaded(true));
+  };
+
+  useEffect(() => {
+    loadFromStorage();
   }, []);
+
+  useEffect(() => {
+    if (reloadTrigger > 0) {
+      loadFromStorage();
+    }
+  }, [reloadTrigger]);
 
   const saveNotes = (updated: Record<string, DayNote>) => {
     setNotes(updated);

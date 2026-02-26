@@ -18,7 +18,7 @@ import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useSound } from "@/lib/SoundContext";
-import { loadServerData } from "@/lib/DataSync";
+import { loadServerData, useDataReload } from "@/lib/DataSync";
 
 function LoggedInView() {
   const insets = useSafeAreaInsets();
@@ -80,6 +80,19 @@ function LoggedInView() {
               </Text>
             </View>
           </View>
+          {user?.email && (
+            <View style={styles.infoRow}>
+              <Ionicons name="mail-outline" size={22} color={colors.accent} />
+              <View style={styles.infoText}>
+                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+                  {t("البريد الإلكتروني", "Email")}
+                </Text>
+                <Text style={[styles.infoValue, { color: colors.text }]}>
+                  {user.email}
+                </Text>
+              </View>
+            </View>
+          )}
           <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
             <Ionicons name="sync-outline" size={22} color={colors.accent} />
             <View style={styles.infoText}>
@@ -121,6 +134,7 @@ export default function AuthScreen() {
   const { t, isDark } = useAppTheme();
   const { user, login, register } = useAuth();
   const { playSound } = useSound();
+  const { triggerReload } = useDataReload();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
@@ -128,6 +142,7 @@ export default function AuthScreen() {
 
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -156,20 +171,24 @@ export default function AuthScreen() {
       setError(t("اسم المستخدم يجب أن يكون 3 أحرف على الأقل", "Username must be at least 3 characters"));
       return;
     }
+    if (!isLogin && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError(t("البريد الإلكتروني غير صحيح", "Invalid email address"));
+      return;
+    }
 
     setLoading(true);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const result = isLogin
       ? await login(username.trim(), password)
-      : await register(username.trim(), password);
+      : await register(username.trim(), password, email.trim() || undefined);
 
     if (result.ok) {
       playSound("success");
       if (isLogin) {
         const loaded = await loadServerData();
         if (loaded) {
-          playSound("success");
+          triggerReload();
         }
       }
       setLoading(false);
@@ -179,9 +198,13 @@ export default function AuthScreen() {
       playSound("error");
       const errCode = result.error || "";
       if (errCode === "INVALID_CREDENTIALS") {
-        setError(t("اسم المستخدم أو كلمة المرور غير صحيحة", "Invalid username or password"));
+        setError(t("اسم المستخدم أو كلمة المرور غير صحيحة", "Invalid username/email or password"));
       } else if (errCode === "USERNAME_TAKEN") {
         setError(t("اسم المستخدم مستخدم بالفعل", "Username already taken"));
+      } else if (errCode === "EMAIL_TAKEN") {
+        setError(t("البريد الإلكتروني مستخدم بالفعل", "Email already taken"));
+      } else if (errCode === "INVALID_EMAIL") {
+        setError(t("البريد الإلكتروني غير صحيح", "Invalid email address"));
       } else {
         setError(t("حدث خطأ، حاول مرة أخرى", "Something went wrong, try again"));
       }
@@ -215,22 +238,49 @@ export default function AuthScreen() {
           <View style={[styles.card, { backgroundColor: cardBg }]}>
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                {t("اسم المستخدم", "Username")}
+                {isLogin
+                  ? t("اسم المستخدم أو البريد الإلكتروني", "Username or Email")
+                  : t("اسم المستخدم", "Username")}
               </Text>
               <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor: colors.border }]}>
-                <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
+                <Ionicons name={isLogin ? "person-outline" : "person-outline"} size={20} color={colors.textSecondary} />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder={t("أدخل اسم المستخدم", "Enter username")}
+                  placeholder={isLogin
+                    ? t("أدخل اسم المستخدم أو الإيميل", "Enter username or email")
+                    : t("أدخل اسم المستخدم", "Enter username")}
                   placeholderTextColor={colors.textSecondary}
                   value={username}
                   onChangeText={setUsername}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  keyboardType={isLogin ? "email-address" : "default"}
                   testID="auth-username"
                 />
               </View>
             </View>
+
+            {!isLogin && (
+              <View style={styles.inputGroup}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  {t("البريد الإلكتروني (اختياري)", "Email (optional)")}
+                </Text>
+                <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor: colors.border }]}>
+                  <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+                  <TextInput
+                    style={[styles.input, { color: colors.text }]}
+                    placeholder={t("أدخل البريد الإلكتروني", "Enter email")}
+                    placeholderTextColor={colors.textSecondary}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                    testID="auth-email"
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
@@ -305,6 +355,7 @@ export default function AuthScreen() {
               playSound("tap");
               setIsLogin(!isLogin);
               setError("");
+              setEmail("");
               setConfirmPassword("");
             }}
             style={styles.switchRow}

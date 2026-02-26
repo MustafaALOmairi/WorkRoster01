@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ShiftType, formatDate } from "./shift-utils";
-import { debouncedSync } from "./DataSync";
+import { debouncedSync, useDataReload } from "./DataSync";
 import { useAuth } from "./AuthContext";
 
 export interface CustomShiftTimes {
@@ -58,8 +58,9 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<ShiftConfig>(DEFAULT_CONFIG);
   const [isLoaded, setIsLoaded] = useState(false);
   const { user } = useAuth();
+  const { reloadTrigger } = useDataReload();
 
-  useEffect(() => {
+  const loadFromStorage = () => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((stored) => {
         if (stored) {
@@ -80,7 +81,17 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
         }
       })
       .finally(() => setIsLoaded(true));
+  };
+
+  useEffect(() => {
+    loadFromStorage();
   }, []);
+
+  useEffect(() => {
+    if (reloadTrigger > 0) {
+      loadFromStorage();
+    }
+  }, [reloadTrigger]);
 
   const saveConfig = (next: ShiftConfig) => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));

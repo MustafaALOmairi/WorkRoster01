@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, ReactNode } from "react";
+import React, { useEffect, useRef, ReactNode, createContext, useContext, useState, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth } from "./AuthContext";
 import { apiRequest } from "./query-client";
@@ -70,9 +70,25 @@ export async function loadServerData(): Promise<boolean> {
   }
 }
 
+interface DataSyncContextValue {
+  reloadTrigger: number;
+  triggerReload: () => void;
+}
+
+const DataSyncContext = createContext<DataSyncContextValue>({ reloadTrigger: 0, triggerReload: () => {} });
+
+export function useDataReload() {
+  return useContext(DataSyncContext);
+}
+
 export function DataSyncProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const prevUserRef = useRef<string | null>(null);
+  const [reloadTrigger, setReloadTrigger] = useState(0);
+
+  const triggerReload = useCallback(() => {
+    setReloadTrigger(prev => prev + 1);
+  }, []);
 
   useEffect(() => {
     if (user && prevUserRef.current !== user.id) {
@@ -84,5 +100,9 @@ export function DataSyncProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
-  return <>{children}</>;
+  return (
+    <DataSyncContext.Provider value={{ reloadTrigger, triggerReload }}>
+      {children}
+    </DataSyncContext.Provider>
+  );
 }

@@ -5,13 +5,14 @@ import { apiRequest } from "./query-client";
 interface AuthUser {
   id: string;
   username: string;
+  email?: string;
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
-  register: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  login: (usernameOrEmail: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  register: (username: string, password: string, email?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   syncToServer: (data: { shiftConfig?: any; notes?: any; themePrefs?: any; aiThemes?: any }) => Promise<void>;
   loadFromServer: () => Promise<{ shiftConfig: any; notes: any; themePrefs: any; aiThemes: any } | null>;
@@ -33,8 +34,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiRequest("GET", "/api/auth/me");
       const data = await res.json();
-      setUser({ id: data.id, username: data.username });
-      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ id: data.id, username: data.username }));
+      const authUser = { id: data.id, username: data.username, email: data.email };
+      setUser(authUser);
+      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
     } catch {
       setUser(null);
       await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
@@ -43,11 +45,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = useCallback(async (username: string, password: string) => {
+  const login = useCallback(async (usernameOrEmail: string, password: string) => {
     try {
-      const res = await apiRequest("POST", "/api/auth/login", { username, password });
+      const res = await apiRequest("POST", "/api/auth/login", { username: usernameOrEmail, password });
       const data = await res.json();
-      const authUser = { id: data.id, username: data.username };
+      const authUser = { id: data.id, username: data.username, email: data.email };
       setUser(authUser);
       await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
       return { ok: true };
@@ -56,17 +58,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (username: string, password: string) => {
+  const register = useCallback(async (username: string, password: string, email?: string) => {
     try {
-      const res = await apiRequest("POST", "/api/auth/register", { username, password });
+      const body: any = { username, password };
+      if (email) body.email = email;
+      const res = await apiRequest("POST", "/api/auth/register", body);
       const data = await res.json();
-      const authUser = { id: data.id, username: data.username };
+      const authUser = { id: data.id, username: data.username, email: data.email };
       setUser(authUser);
       await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
       return { ok: true };
     } catch (err: any) {
       const msg = err?.message || "";
-      if (msg.includes("409")) return { ok: false, error: "USERNAME_TAKEN" };
+      if (msg.includes("409")) {
+        if (msg.includes("EMAIL_TAKEN")) return { ok: false, error: "EMAIL_TAKEN" };
+        return { ok: false, error: "USERNAME_TAKEN" };
+      }
+      if (msg.includes("INVALID_EMAIL")) return { ok: false, error: "INVALID_EMAIL" };
       return { ok: false, error: "REGISTRATION_FAILED" };
     }
   }, []);

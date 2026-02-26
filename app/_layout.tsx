@@ -65,17 +65,17 @@ export default function RootLayout() {
         <GestureHandlerRootView>
           <KeyboardProvider>
             <AuthProvider>
-              <ThemeProvider>
-                <ShiftProvider>
-                  <NotesProvider>
-                    <SoundProvider>
-                      <DataSyncProvider>
+              <DataSyncProvider>
+                <ThemeProvider>
+                  <ShiftProvider>
+                    <NotesProvider>
+                      <SoundProvider>
                         <RootLayoutNav />
-                      </DataSyncProvider>
-                    </SoundProvider>
-                  </NotesProvider>
-                </ShiftProvider>
-              </ThemeProvider>
+                      </SoundProvider>
+                    </NotesProvider>
+                  </ShiftProvider>
+                </ThemeProvider>
+              </DataSyncProvider>
             </AuthProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>

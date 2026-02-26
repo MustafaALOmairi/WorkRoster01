@@ -260,6 +260,7 @@ function setupErrorHandler(app: express.Application) {
 }
 
 (async () => {
+  app.set("trust proxy", 1);
   setupCors(app);
   setupBodyParsing(app);
   setupRequestLogging(app);

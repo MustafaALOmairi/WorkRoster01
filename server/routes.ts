@@ -19,6 +19,7 @@ declare module "express-session" {
   interface SessionData {
     userId: string;
     username: string;
+    email?: string;
   }
 }
 
@@ -46,15 +47,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       cookie: {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: true,
+        sameSite: "none",
       },
     })
   );
 
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {
-      const { username, password } = req.body;
+      const { username, email, password } = req.body;
       if (!username || !password) {
         res.status(400).json({ error: "Username and password required" });
         return;
@@ -67,6 +68,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Password must be at least 6 characters" });
         return;
       }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        res.status(400).json({ error: "INVALID_EMAIL" });
+        return;
+      }
 
       const existing = await pool.query("SELECT id FROM users WHERE username = $1", [username]);
       if (existing.rows.length > 0) {
@@ -74,15 +79,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      if (email) {
+        const existingEmail = await pool.query("SELECT id FROM users WHERE email = $1", [email]);
+        if (existingEmail.rows.length > 0) {
+          res.status(409).json({ error: "EMAIL_TAKEN" });
+          return;
+        }
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
       const result = await pool.query(
-        "INSERT INTO users (id, username, password) VALUES (gen_random_uuid(), $1, $2) RETURNING id, username",
-        [username, hashedPassword]
+        "INSERT INTO users (id, username, email, password) VALUES (gen_random_uuid(), $1, $2, $3) RETURNING id, username, email",
+        [username, email || null, hashedPassword]
       );
       const user = result.rows[0];
       req.session.userId = user.id;
       req.session.username = user.username;
-      res.json({ id: user.id, username: user.username });
+      res.json({ id: user.id, username: user.username, email: user.email });
     } catch (err: any) {
       console.error("Register error:", err?.message);
       res.status(500).json({ error: "Registration failed" });
@@ -97,7 +110,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      const result = await pool.query("SELECT id, username, password FROM users WHERE username = $1", [username]);
+      const isEmail = username.includes("@");
+      const result = isEmail
+        ? await pool.query("SELECT id, username, email, password FROM users WHERE email = $1", [username])
+        : await pool.query("SELECT id, username, email, password FROM users WHERE username = $1", [username]);
       if (result.rows.length === 0) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
@@ -112,7 +128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.userId = user.id;
       req.session.username = user.username;
-      res.json({ id: user.id, username: user.username });
+      req.session.email = user.email || undefined;
+      res.json({ id: user.id, username: user.username, email: user.email });
     } catch (err: any) {
       console.error("Login error:", err?.message);
       res.status(500).json({ error: "Login failed" });
@@ -134,7 +151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
-    res.json({ id: req.session.userId, username: req.session.username });
+    res.json({ id: req.session.userId, username: req.session.username, email: req.session.email });
   });
 
   app.post("/api/user-data/save", async (req: Request, res: Response) => {
