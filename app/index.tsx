@@ -230,10 +230,15 @@ export default function CalendarScreen() {
     rest: "leaf",
   };
 
-  const bgColor = isDark ? "#0D1117" : colors.surface;
-  const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
-  const headerColor = isDark ? "#C9D1D9" : colors.text;
-  const subtextColor = isDark ? "#8B949E" : colors.textSecondary;
+  const bgColor = activeStoreTheme ? colors.surface : (isDark ? "#0D1117" : colors.surface);
+  const cardBg = activeStoreTheme ? colors.cardBg : (isDark ? "#161B22" : colors.surfaceSecondary);
+  const headerColor = activeStoreTheme ? colors.text : (isDark ? "#C9D1D9" : colors.text);
+  const subtextColor = activeStoreTheme ? colors.textSecondary : (isDark ? "#8B949E" : colors.textSecondary);
+  const bottomCardBg = activeStoreTheme?.bottomCardBg ?? "#1A1A2E";
+  const bottomCardText = activeStoreTheme?.bottomCardText ?? "#FFFFFF";
+  const bottomCardSubtext = activeStoreTheme?.bottomCardText
+    ? activeStoreTheme.bottomCardText === "#FFFFFF" ? "rgba(255,255,255,0.7)" : activeStoreTheme.bottomCardText + "99"
+    : "#B0B0C0";
 
   const weekendSundayColor = "#5B9BD5";
   const weekendSaturdayColor = "#D4A84B";
@@ -354,7 +359,7 @@ export default function CalendarScreen() {
         )}
       </View>
 
-      <View style={[styles.detailCard, { backgroundColor: "#1A1A2E", paddingBottom: insets.bottom + webBottomInset + 16 }]}>
+      <View style={[styles.detailCard, { backgroundColor: bottomCardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -363,7 +368,7 @@ export default function CalendarScreen() {
           }}
           style={styles.detailCardInner}
         >
-          <Text style={[styles.detailDateText, { color: "#FFFFFF" }]}>{selFormatted}</Text>
+          <Text style={[styles.detailDateText, { color: bottomCardText }]}>{selFormatted}</Text>
 
           {selHolidays.map((h) => (
             <View key={h.id} style={styles.holidayTag}>
@@ -380,19 +385,19 @@ export default function CalendarScreen() {
           </View>
 
           {selStartTime ? (
-            <Text style={[styles.detailTime, { color: "#B0B0C0" }]}>
+            <Text style={[styles.detailTime, { color: bottomCardSubtext }]}>
               {selStartTime} - {selEndTime}
             </Text>
           ) : (
-            <Text style={[styles.detailTime, { color: "#B0B0C0" }]}>
+            <Text style={[styles.detailTime, { color: bottomCardSubtext }]}>
               {t("يوم راحة", "Day Off")}
             </Text>
           )}
 
           {notes[selectedDate]?.text ? (
             <View style={styles.notePreview}>
-              <Ionicons name="document-text-outline" size={14} color="#B0B0C0" />
-              <Text style={[styles.notePreviewText, { color: "#B0B0C0" }]} numberOfLines={2}>
+              <Ionicons name="document-text-outline" size={14} color={bottomCardSubtext} />
+              <Text style={[styles.notePreviewText, { color: bottomCardSubtext }]} numberOfLines={2}>
                 {notes[selectedDate].text}
               </Text>
             </View>
@@ -407,8 +412,8 @@ export default function CalendarScreen() {
             }}
             style={styles.detailActionRow}
           >
-            <Ionicons name="create-outline" size={18} color="#B0B0C0" />
-            <Text style={[styles.detailActionText, { color: "#B0B0C0" }]}>
+            <Ionicons name="create-outline" size={18} color={bottomCardSubtext} />
+            <Text style={[styles.detailActionText, { color: bottomCardSubtext }]}>
               {t("إضافة ملاحظة", "Add note")}
             </Text>
           </Pressable>
@@ -419,8 +424,8 @@ export default function CalendarScreen() {
             }}
             style={styles.detailActionRow}
           >
-            <Ionicons name="notifications-outline" size={18} color="#B0B0C0" />
-            <Text style={[styles.detailActionText, { color: "#B0B0C0" }]}>
+            <Ionicons name="notifications-outline" size={18} color={bottomCardSubtext} />
+            <Text style={[styles.detailActionText, { color: bottomCardSubtext }]}>
               {t("تعيين تذكير", "Set reminder")}
             </Text>
           </Pressable>

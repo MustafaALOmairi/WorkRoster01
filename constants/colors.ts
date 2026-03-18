@@ -22,18 +22,18 @@ export function getThemeColors(isDark: boolean, shiftColors: { morning: string; 
 
   return {
     isDark,
-    primary: isDark ? "#FFFFFF" : (storeTheme?.textColor || "#0F2027"),
+    primary: storeTheme?.textColor || (isDark ? "#FFFFFF" : "#0F2027"),
     primaryLight: isDark ? "#CCCCCC" : "#1A3A4A",
     accent: accentColor,
     accentLight: accentLightColor,
-    surface: isDark ? "#0A0A0A" : (storeTheme?.surfaceBg || "#FFFFFF"),
-    surfaceSecondary: isDark ? "#1A1A1A" : (storeTheme?.cardBg || "#F4F6F8"),
+    surface: storeTheme?.surfaceBg || (isDark ? "#0A0A0A" : "#FFFFFF"),
+    surfaceSecondary: storeTheme?.cardBg || (isDark ? "#1A1A1A" : "#F4F6F8"),
     surfaceTertiary: isDark ? "#252525" : "#EAEEF2",
-    text: isDark ? "#FFFFFF" : (storeTheme?.textColor || "#0F2027"),
-    textSecondary: isDark ? "#999" : (storeTheme?.textSecondary || "#6B7C8A"),
+    text: storeTheme?.textColor || (isDark ? "#FFFFFF" : "#0F2027"),
+    textSecondary: storeTheme?.textSecondary || (isDark ? "#999" : "#6B7C8A"),
     textLight: "#FFFFFF",
-    border: isDark ? "#333" : (storeTheme?.borderColor || "#E2E8EE"),
-    cardBg: isDark ? "#1A1A1A" : (storeTheme?.cardBg || "#F4F6F8"),
+    border: storeTheme?.borderColor || (isDark ? "#333" : "#E2E8EE"),
+    cardBg: storeTheme?.cardBg || (isDark ? "#1A1A1A" : "#F4F6F8"),
 
     shifts: {
       morning: {

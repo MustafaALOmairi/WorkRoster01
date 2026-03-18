@@ -26,18 +26,37 @@ const MINI_DAYS = [
 const SHIFT_CYCLE: ("morning" | "evening" | "night" | "rest")[] = ["morning", "evening", "night", "rest"];
 
 function MiniCalendarPreview({ theme }: { theme: StoreTheme }) {
-  const lighten = (hex: string, amount: number) => {
+  const isDarkTheme = theme.mode === "dark";
+
+  const getCellBg = (hex: string) => {
+    if (isDarkTheme) {
+      const num = parseInt(hex.replace("#", ""), 16);
+      const r = (num >> 16) & 0xff;
+      const g = (num >> 8) & 0xff;
+      const b = num & 0xff;
+      return `rgba(${r},${g},${b},0.25)`;
+    }
     const num = parseInt(hex.replace("#", ""), 16);
-    const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(255 * amount));
-    const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * amount));
-    const b = Math.min(255, (num & 0xff) + Math.round(255 * amount));
+    const r = Math.min(255, ((num >> 16) & 0xff) + Math.round(255 * 0.65));
+    const g = Math.min(255, ((num >> 8) & 0xff) + Math.round(255 * 0.65));
+    const b = Math.min(255, (num & 0xff) + Math.round(255 * 0.65));
     return `rgb(${r},${g},${b})`;
   };
+
+  const getHeaderTextColor = (headerBg: string, textColor: string) => {
+    const num = parseInt(headerBg.replace("#", ""), 16);
+    const r = (num >> 16) & 0xff;
+    const g = (num >> 8) & 0xff;
+    const b = num & 0xff;
+    const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luminance < 100 ? "#FFFFFF" : textColor;
+  };
+  const headerTextColor = getHeaderTextColor(theme.headerBg, theme.textColor);
 
   return (
     <View style={[miniStyles.calendar, { backgroundColor: theme.surfaceBg, borderColor: theme.borderColor }]}>
       <View style={[miniStyles.calHeader, { backgroundColor: theme.headerBg }]}>
-        <Text style={[miniStyles.calMonth, { color: theme.headerBg === "#212121" ? "#FFFFFF" : theme.textColor }]}>
+        <Text style={[miniStyles.calMonth, { color: headerTextColor }]}>
           2026
         </Text>
       </View>
@@ -56,7 +75,7 @@ function MiniCalendarPreview({ theme }: { theme: StoreTheme }) {
             }
             const shiftType = SHIFT_CYCLE[(day - 1) % 4];
             const shiftColor = theme.shiftColors[shiftType];
-            const bgColor = lighten(shiftColor, 0.65);
+            const bgColor = getCellBg(shiftColor);
             return (
               <View
                 key={di}
