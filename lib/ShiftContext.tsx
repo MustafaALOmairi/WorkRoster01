@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ShiftType, formatDate } from "./shift-utils";
+import { ShiftType, formatDate, parseDate } from "./shift-utils";
 import { debouncedSync, useDataReload } from "./DataSync";
 import { useAuth } from "./AuthContext";
+import { updateWidget } from "./widgetService";
 
 export interface CustomShiftTimes {
   morning: { start: string; end: string };
@@ -92,6 +93,16 @@ export function ShiftProvider({ children }: { children: ReactNode }) {
       loadFromStorage();
     }
   }, [reloadTrigger]);
+
+  useEffect(() => {
+    if (isLoaded && config.pattern.length > 0) {
+      updateWidget(
+        parseDate(config.startDate),
+        config.pattern,
+        config.customShiftTimes
+      );
+    }
+  }, [config.startDate, config.pattern, config.customShiftTimes, isLoaded]);
 
   const saveConfig = (next: ShiftConfig) => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
