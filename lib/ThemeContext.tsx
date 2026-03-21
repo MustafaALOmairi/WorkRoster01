@@ -28,6 +28,13 @@ const COLOR_PRESETS: { name: string; nameAr: string; colors: ShiftColors }[] = [
   { name: "Neon", nameAr: "نيون", colors: { morning: "#FF6D00", evening: "#D500F9", night: "#304FFE", rest: "#00C853" } },
 ];
 
+export interface ShiftIcons {
+  morning: string;
+  evening: string;
+  night: string;
+  rest: string;
+}
+
 export interface StoreTheme {
   id: string;
   name: string;
@@ -46,6 +53,9 @@ export interface StoreTheme {
   borderColor: string;
   bottomCardBg?: string;
   bottomCardText?: string;
+  shiftIcons?: ShiftIcons;
+  dayCellRadius?: number;
+  showIconInCell?: boolean;
   backgroundImage?: string;
   backgroundOpacity?: number;
 }
@@ -69,6 +79,9 @@ export const STORE_THEMES: StoreTheme[] = [
     borderColor: "#E8EAF6",
     bottomCardBg: "#FFFFFF",
     bottomCardText: "#1A1A2E",
+    shiftIcons: { morning: "sunny-outline", evening: "partly-sunny-outline", night: "moon-outline", rest: "leaf-outline" },
+    dayCellRadius: 50,
+    showIconInCell: false,
   },
   {
     id: "deep_space",
@@ -88,6 +101,9 @@ export const STORE_THEMES: StoreTheme[] = [
     borderColor: "#1E3A5F",
     bottomCardBg: "#0D1F3C",
     bottomCardText: "#E8F4F8",
+    shiftIcons: { morning: "planet-outline", evening: "sparkles", night: "star", rest: "planet" },
+    dayCellRadius: 4,
+    showIconInCell: true,
   },
   {
     id: "rose_blush",
@@ -107,6 +123,9 @@ export const STORE_THEMES: StoreTheme[] = [
     borderColor: "#F8BBD9",
     bottomCardBg: "#E91E63",
     bottomCardText: "#FFFFFF",
+    shiftIcons: { morning: "flash", evening: "heart-outline", night: "moon", rest: "heart" },
+    dayCellRadius: 50,
+    showIconInCell: false,
   },
   {
     id: "ocean_teal",
@@ -126,6 +145,9 @@ export const STORE_THEMES: StoreTheme[] = [
     borderColor: "#80DEEA",
     bottomCardBg: "#FF8C00",
     bottomCardText: "#FFFFFF",
+    shiftIcons: { morning: "sunny", evening: "water-outline", night: "moon-outline", rest: "leaf" },
+    dayCellRadius: 14,
+    showIconInCell: false,
   },
   {
     id: "minimalist_white",
@@ -143,6 +165,9 @@ export const STORE_THEMES: StoreTheme[] = [
     textColor: "#212121",
     textSecondary: "#757575",
     borderColor: "#E0E0E0",
+    shiftIcons: { morning: "sunny-outline", evening: "partly-sunny-outline", night: "moon-outline", rest: "leaf-outline" },
+    dayCellRadius: 50,
+    showIconInCell: false,
   },
   {
     id: "purple_dream",
@@ -160,6 +185,9 @@ export const STORE_THEMES: StoreTheme[] = [
     textColor: "#4A148C",
     textSecondary: "#7B1FA2",
     borderColor: "#E1BEE7",
+    shiftIcons: { morning: "sparkles", evening: "star-outline", night: "star", rest: "heart-outline" },
+    dayCellRadius: 50,
+    showIconInCell: false,
   },
   {
     id: "bold_classic",
@@ -177,6 +205,9 @@ export const STORE_THEMES: StoreTheme[] = [
     textColor: "#212121",
     textSecondary: "#616161",
     borderColor: "#BDBDBD",
+    shiftIcons: { morning: "sunny", evening: "partly-sunny", night: "moon", rest: "leaf" },
+    dayCellRadius: 2,
+    showIconInCell: false,
   },
 ];
 

@@ -76,12 +76,23 @@ function MiniCalendarPreview({ theme }: { theme: StoreTheme }) {
             const shiftType = SHIFT_CYCLE[(day - 1) % 4];
             const shiftColor = theme.shiftColors[shiftType];
             const bgColor = getCellBg(shiftColor);
+            const cellRadius = typeof theme.dayCellRadius === "number"
+              ? Math.min(theme.dayCellRadius, 10)
+              : 3;
             return (
               <View
                 key={di}
-                style={[miniStyles.dayCell, { backgroundColor: bgColor, borderRadius: 3 }]}
+                style={[miniStyles.dayCell, { backgroundColor: bgColor, borderRadius: cellRadius }]}
               >
-                <Text style={[miniStyles.dayNum, { color: shiftColor }]}>{day}</Text>
+                {theme.showIconInCell && theme.shiftIcons ? (
+                  <Ionicons
+                    name={theme.shiftIcons[shiftType] as any}
+                    size={6}
+                    color={shiftColor}
+                  />
+                ) : (
+                  <Text style={[miniStyles.dayNum, { color: shiftColor }]}>{day}</Text>
+                )}
               </View>
             );
           })}

@@ -47,10 +47,14 @@ interface CalendarDayCellProps {
   isHoliday: boolean;
   lang: string;
   onSelect: () => void;
+  cellRadius?: number;
+  cellIcon?: string;
+  showIconInCell?: boolean;
 }
 
 function CalendarDayCell({
   day, shiftType, isToday, isSelected, dayOfWeek, colors, hasNote, isHoliday, lang, onSelect,
+  cellRadius, cellIcon, showIconInCell,
 }: CalendarDayCellProps) {
   const def = SHIFT_DEFINITIONS[shiftType];
   const shiftColor = colors.shifts[shiftType];
@@ -64,6 +68,8 @@ function CalendarDayCell({
   if (isSunday || (lang === "ar" && isFriday)) numberColor = "#5B9BD5";
   if (isSaturday) numberColor = "#D4A84B";
 
+  const resolvedRadius = cellRadius !== undefined ? cellRadius : 8;
+
   const handlePress = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     playSound("select");
@@ -75,14 +81,28 @@ function CalendarDayCell({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.dayCell,
-        (isToday || isSelected) && [styles.dayCellHighlight, { borderColor: "#5B9BD5" }],
-        isSelected && { backgroundColor: "rgba(91,155,213,0.1)" },
+        (isToday || isSelected) && [
+          styles.dayCellHighlight,
+          { borderColor: "#5B9BD5", borderRadius: resolvedRadius },
+        ],
+        isSelected && {
+          backgroundColor: "rgba(91,155,213,0.1)",
+          borderRadius: resolvedRadius,
+        },
         { opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Text style={[styles.shiftLabelText, { color: shiftColor.color }]}>
-        {lang === "ar" ? def.shortLabelAr : def.shortLabel}
-      </Text>
+      {showIconInCell && cellIcon ? (
+        <Ionicons
+          name={cellIcon as keyof typeof Ionicons.glyphMap}
+          size={11}
+          color={shiftColor.color}
+        />
+      ) : (
+        <Text style={[styles.shiftLabelText, { color: shiftColor.color }]}>
+          {lang === "ar" ? def.shortLabelAr : def.shortLabel}
+        </Text>
+      )}
       <Text style={[styles.dayNumber, { color: numberColor }]}>
         {day}
       </Text>
@@ -224,10 +244,10 @@ export default function CalendarScreen() {
   const selHolidays = getAllHolidaysForDate(selectedDate);
 
   const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-    morning: "sunny",
-    evening: "partly-sunny",
-    night: "moon",
-    rest: "leaf",
+    morning: (activeStoreTheme?.shiftIcons?.morning || "sunny") as keyof typeof Ionicons.glyphMap,
+    evening: (activeStoreTheme?.shiftIcons?.evening || "partly-sunny") as keyof typeof Ionicons.glyphMap,
+    night: (activeStoreTheme?.shiftIcons?.night || "moon") as keyof typeof Ionicons.glyphMap,
+    rest: (activeStoreTheme?.shiftIcons?.rest || "leaf") as keyof typeof Ionicons.glyphMap,
   };
 
   const bgColor = activeStoreTheme ? colors.surface : (isDark ? "#0D1117" : colors.surface);
@@ -287,6 +307,9 @@ export default function CalendarScreen() {
                   isHoliday={isHoliday}
                   lang={language}
                   onSelect={() => setSelectedDate(dateKey)}
+                  cellRadius={activeStoreTheme?.dayCellRadius}
+                  cellIcon={activeStoreTheme?.shiftIcons?.[shiftType]}
+                  showIconInCell={activeStoreTheme?.showIconInCell}
                 />
               );
             })}
