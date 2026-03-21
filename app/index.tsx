@@ -50,11 +50,13 @@ interface CalendarDayCellProps {
   cellRadius?: number;
   cellIcon?: string;
   showIconInCell?: boolean;
+  selBg?: string;
+  selBorder?: string;
 }
 
 function CalendarDayCell({
   day, shiftType, isToday, isSelected, dayOfWeek, colors, hasNote, isHoliday, lang, onSelect,
-  cellRadius, cellIcon, showIconInCell,
+  cellRadius, cellIcon, showIconInCell, selBg, selBorder,
 }: CalendarDayCellProps) {
   const def = SHIFT_DEFINITIONS[shiftType];
   const shiftColor = colors.shifts[shiftType];
@@ -69,6 +71,8 @@ function CalendarDayCell({
   if (isSaturday) numberColor = "#D4A84B";
 
   const resolvedRadius = cellRadius !== undefined ? cellRadius : 8;
+  const highlightBorder = selBorder || "#5B9BD5";
+  const highlightBg = selBg || "rgba(91,155,213,0.1)";
 
   const handlePress = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -83,10 +87,10 @@ function CalendarDayCell({
         styles.dayCell,
         (isToday || isSelected) && [
           styles.dayCellHighlight,
-          { borderColor: "#5B9BD5", borderRadius: resolvedRadius },
+          { borderColor: highlightBorder, borderRadius: resolvedRadius },
         ],
         isSelected && {
-          backgroundColor: "rgba(91,155,213,0.1)",
+          backgroundColor: highlightBg,
           borderRadius: resolvedRadius,
         },
         { opacity: pressed ? 0.7 : 1 },
@@ -310,6 +314,8 @@ export default function CalendarScreen() {
                   cellRadius={activeStoreTheme?.dayCellRadius}
                   cellIcon={activeStoreTheme?.shiftIcons?.[shiftType]}
                   showIconInCell={activeStoreTheme?.showIconInCell}
+                  selBg={activeStoreTheme?.selectionBg}
+                  selBorder={activeStoreTheme?.selectionBorder}
                 />
               );
             })}

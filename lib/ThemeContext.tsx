@@ -56,6 +56,8 @@ export interface StoreTheme {
   shiftIcons?: ShiftIcons;
   dayCellRadius?: number;
   showIconInCell?: boolean;
+  selectionBg?: string;
+  selectionBorder?: string;
   backgroundImage?: string;
   backgroundOpacity?: number;
 }
@@ -208,6 +210,54 @@ export const STORE_THEMES: StoreTheme[] = [
     shiftIcons: { morning: "sunny", evening: "partly-sunny", night: "moon", rest: "leaf" },
     dayCellRadius: 2,
     showIconInCell: false,
+  },
+  {
+    id: "luxury_gold",
+    name: "Luxury Gold",
+    nameAr: "ذهبي فاخر",
+    description: "Dark black luxury with golden accents",
+    descriptionAr: "أسود فاخر مع لمسات ذهبية ملكية",
+    mode: "dark",
+    accent: "#D4AF37",
+    shiftColors: { morning: "#D4AF37", evening: "#C9922A", night: "#A07820", rest: "#8B7536" },
+    headerBg: "#0A0A0A",
+    dayHeaderBg: "#111111",
+    surfaceBg: "#111111",
+    cardBg: "#1A1A1A",
+    textColor: "#D4AF37",
+    textSecondary: "#9A7520",
+    borderColor: "#D4AF37",
+    bottomCardBg: "#0D0D0D",
+    bottomCardText: "#D4AF37",
+    shiftIcons: { morning: "sunny", evening: "partly-sunny", night: "moon", rest: "leaf" },
+    dayCellRadius: 3,
+    showIconInCell: false,
+    selectionBg: "rgba(212,175,55,0.18)",
+    selectionBorder: "#D4AF37",
+  },
+  {
+    id: "rainbow_light",
+    name: "Rainbow Light",
+    nameAr: "ألوان قوس قزح",
+    description: "Bright white with vibrant colorful shifts",
+    descriptionAr: "أبيض مشرق مع ورديات بألوان قوس قزح",
+    mode: "light",
+    accent: "#6720C8",
+    shiftColors: { morning: "#FF6B35", evening: "#E91E8C", night: "#2196F3", rest: "#00BFA5" },
+    headerBg: "#FFFFFF",
+    dayHeaderBg: "#F8F8FF",
+    surfaceBg: "#FFFFFF",
+    cardBg: "#FFFFFF",
+    textColor: "#1A1A2E",
+    textSecondary: "#6B7280",
+    borderColor: "#E5E7EB",
+    bottomCardBg: "#F3EEFF",
+    bottomCardText: "#1A1A2E",
+    shiftIcons: { morning: "sunny", evening: "partly-sunny", night: "moon", rest: "leaf" },
+    dayCellRadius: 50,
+    showIconInCell: false,
+    selectionBg: "rgba(103,32,200,0.15)",
+    selectionBorder: "#6720C8",
   },
 ];
 
