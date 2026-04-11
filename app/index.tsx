@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -12,7 +12,7 @@ import {
 import { CircularCalendar } from "@/components/CircularCalendar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
@@ -134,6 +134,16 @@ export default function CalendarScreen() {
   const todayKey = formatDate(today);
   const [selectedDate, setSelectedDate] = useState<string>(todayKey);
   const [drawerVisible, setDrawerVisible] = useState(false);
+
+  const { date: paramDate } = useLocalSearchParams<{ date?: string }>();
+  useEffect(() => {
+    if (paramDate && /^\d{4}-\d{2}-\d{2}$/.test(paramDate)) {
+      const d = parseDate(paramDate);
+      setSelectedDate(paramDate);
+      setCurrentYear(d.getFullYear());
+      setCurrentMonth(d.getMonth());
+    }
+  }, [paramDate]);
 
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
   const monthShort = language === "ar" ? MONTH_NAMES_AR : MONTH_SHORT_EN;

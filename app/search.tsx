@@ -327,12 +327,12 @@ export default function SearchScreen() {
             <Pressable
               onPress={() => {
                 if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push({ pathname: "/day-detail", params: { date: singleResult.dateKey } });
+                router.navigate({ pathname: "/", params: { date: singleResult.dateKey } });
               }}
               style={[styles.viewDetailBtn, { backgroundColor: colors.accent }]}
             >
-              <Text style={styles.viewDetailBtnText}>{t("عرض التفاصيل", "View Details")}</Text>
-              <Ionicons name="arrow-forward" size={16} color="#FFF" />
+              <Ionicons name="calendar" size={16} color="#FFF" />
+              <Text style={styles.viewDetailBtnText}>{t("عرض في التقويم", "View in Calendar")}</Text>
             </Pressable>
           </View>
         </View>
