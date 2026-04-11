@@ -17,7 +17,6 @@ import {
   getShiftForDate,
   getDaysInMonth,
   parseDate,
-  formatDate,
   MONTH_NAMES_AR,
   MONTH_NAMES_EN,
   DAY_FULL_AR,
@@ -120,8 +119,11 @@ export function CircularCalendar({
   const noteText = notes[selectedDate]?.text;
 
   const circumference = 2 * Math.PI * OUTER_R;
-  const cellSize = Math.min(24, Math.floor((circumference / daysInMonth) * 0.75));
   const degreesPerPx = 360 / circumference;
+  // Cell dimensions: portrait rectangle, upright
+  const slotSize = circumference / daysInMonth;
+  const cellW = Math.min(26, Math.floor(slotSize * 0.76));
+  const cellH = Math.round(cellW * 1.35);
 
   const getIcon = (shift: ShiftType): keyof typeof Ionicons.glyphMap => {
     if (shiftIcons?.[shift]) return shiftIcons[shift] as keyof typeof Ionicons.glyphMap;
@@ -133,14 +135,27 @@ export function CircularCalendar({
     return `${year}-${String(m1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
   };
 
-  // ── Rotation state ──────────────────────────────────────────────
+  // ── Rotation animation (JS thread so we can read value) ─────────
   const initialIndex = selInThisMonth ? selDay - 1 : 0;
-  const rotAnim = useRef(new Animated.Value(computeBaseRot(initialIndex, daysInMonth))).current;
+  const rotAnim = useRef(
+    new Animated.Value(computeBaseRot(initialIndex, daysInMonth))
+  ).current;
+
+  // Track live value via listener (works without nativeDriver)
   const currentRotRef = useRef(computeBaseRot(initialIndex, daysInMonth));
+  const dragStartRef = useRef(currentRotRef.current);
   const suppressNextEffect = useRef(false);
   const daysInMonthRef = useRef(daysInMonth);
   daysInMonthRef.current = daysInMonth;
 
+  useEffect(() => {
+    const id = rotAnim.addListener(({ value }) => {
+      currentRotRef.current = value;
+    });
+    return () => rotAnim.removeListener(id);
+  }, []);
+
+  // Animate ring to selected day whenever selectedDate / month changes
   useEffect(() => {
     if (suppressNextEffect.current) {
       suppressNextEffect.current = false;
@@ -152,33 +167,33 @@ export function CircularCalendar({
     const animTarget = currentRotRef.current + diff;
     Animated.spring(rotAnim, {
       toValue: animTarget,
-      useNativeDriver: true,
+      useNativeDriver: false,
       tension: 80,
       friction: 10,
-    }).start(() => {
-      rotAnim.setValue(targetRot);
-      currentRotRef.current = targetRot;
-    });
+    }).start();
   }, [selectedDate, month, year]);
 
-  // ── PanResponder for rotation ───────────────────────────────────
+  // ── PanResponder: rotate ring day-by-day ────────────────────────
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      // Don't capture on start — let taps fall through to Pressables
+      onStartShouldSetPanResponder: () => false,
+      onStartShouldSetPanResponderCapture: () => false,
+      // Capture horizontal movement before parent sees it
       onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > 4 || Math.abs(gs.dy) > 4,
+        Math.abs(gs.dx) > 6 && Math.abs(gs.dx) > Math.abs(gs.dy),
+      onMoveShouldSetPanResponderCapture: (_, gs) =>
+        Math.abs(gs.dx) > 6 && Math.abs(gs.dx) > Math.abs(gs.dy),
       onPanResponderGrant: () => {
-        rotAnim.stopAnimation((val) => {
-          currentRotRef.current = val;
-          rotAnim.setValue(val);
-        });
+        rotAnim.stopAnimation();
+        dragStartRef.current = currentRotRef.current;
       },
       onPanResponderMove: (_, gs) => {
-        rotAnim.setValue(currentRotRef.current + gs.dx * degreesPerPx);
+        rotAnim.setValue(dragStartRef.current + gs.dx * degreesPerPx);
       },
       onPanResponderRelease: (_, gs) => {
         const total = daysInMonthRef.current;
-        const currentVisual = currentRotRef.current + gs.dx * degreesPerPx;
+        const currentVisual = dragStartRef.current + gs.dx * degreesPerPx;
         const phase = ((-currentVisual) % 360 + 360) % 360;
         let nearestIndex = Math.round((phase / 360) * total) % total;
         nearestIndex = Math.max(0, Math.min(total - 1, nearestIndex));
@@ -189,28 +204,51 @@ export function CircularCalendar({
 
         Animated.spring(rotAnim, {
           toValue: animTarget,
-          useNativeDriver: true,
+          useNativeDriver: false,
           tension: 100,
           friction: 12,
-        }).start(() => {
-          rotAnim.setValue(snapRot);
-          currentRotRef.current = snapRot;
-        });
+        }).start();
 
         suppressNextEffect.current = true;
-        const dateKey = getDateKey(nearestIndex + 1);
-        onSelectDate(dateKey);
+        onSelectDate(getDateKey(nearestIndex + 1));
         if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       },
+      onPanResponderTerminate: () => {},
+      onShouldBlockNativeResponder: () => true,
     })
   ).current;
+
+  // Interpolations for outer (+) and inner counter (-) rotation
+  const RANGE = 36000;
+  const outerRotate = rotAnim.interpolate({
+    inputRange: [-RANGE, RANGE],
+    outputRange: [`-${RANGE}deg`, `${RANGE}deg`],
+  });
+  const innerCounterRotate = rotAnim.interpolate({
+    inputRange: [-RANGE, RANGE],
+    outputRange: [`${RANGE}deg`, `-${RANGE}deg`],
+  });
 
   return (
     <View
       style={[styles.container, { width: SIZE, height: SIZE }]}
       {...panResponder.panHandlers}
     >
-      {/* Outer glow rings */}
+      {/* Track ring background */}
+      <View
+        style={[
+          styles.trackRing,
+          {
+            width: OUTER_R * 2 + cellH + 10,
+            height: OUTER_R * 2 + cellH + 10,
+            borderRadius: (OUTER_R + cellH / 2 + 5),
+            left: CENTER - OUTER_R - cellH / 2 - 5,
+            top: CENTER - OUTER_R - cellH / 2 - 5,
+          },
+        ]}
+      />
+
+      {/* Outer glow ring */}
       <View
         style={[
           styles.glowRing,
@@ -238,96 +276,91 @@ export function CircularCalendar({
         ]}
       />
 
-      {/* Rotating ring of day cells */}
+      {/*
+        OUTER Animated.View: rotates → causes cells to ORBIT around center
+        INNER Animated.View: counter-rotates → keeps cells UPRIGHT (numbers readable)
+      */}
       <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            transform: [
-              {
-                rotate: rotAnim.interpolate({
-                  inputRange: [-36000, 36000],
-                  outputRange: ["-36000deg", "36000deg"],
-                }),
-              },
-            ],
-          },
-        ]}
+        style={[StyleSheet.absoluteFill, { transform: [{ rotate: outerRotate }] }]}
+        pointerEvents="box-none"
       >
-        {Array.from({ length: daysInMonth }, (_, i) => {
-          const d = i + 1;
-          const dateKey = getDateKey(d);
-          const dateObj = new Date(year, month, d);
-          const shift = getShiftForDate(dateObj, startDate, pattern);
-          const shiftColor = colors.shifts[shift];
+        <Animated.View
+          style={[StyleSheet.absoluteFill, { transform: [{ rotate: innerCounterRotate }] }]}
+          pointerEvents="box-none"
+        >
+          {Array.from({ length: daysInMonth }, (_, i) => {
+            const d = i + 1;
+            const dateKey = getDateKey(d);
+            const dateObj = new Date(year, month, d);
+            const shift = getShiftForDate(dateObj, startDate, pattern);
+            const shiftColor = colors.shifts[shift];
 
-          const angle = (i / daysInMonth) * 2 * Math.PI - Math.PI / 2;
-          const x = CENTER + OUTER_R * Math.cos(angle);
-          const y = CENTER + OUTER_R * Math.sin(angle);
+            // Position on ring
+            const angle = (i / daysInMonth) * 2 * Math.PI - Math.PI / 2;
+            const cx = CENTER + OUTER_R * Math.cos(angle);
+            const cy = CENTER + OUTER_R * Math.sin(angle);
 
-          const isSelected = dateKey === selectedDate;
-          const isToday =
-            dateObj.getFullYear() === today.getFullYear() &&
-            dateObj.getMonth() === today.getMonth() &&
-            dateObj.getDate() === today.getDate();
-          const hasNote = !!notes[dateKey]?.text;
-          const cellAngleDeg = (i / daysInMonth) * 360 + 90;
+            const isSelected = dateKey === selectedDate;
+            const isToday =
+              dateObj.getFullYear() === today.getFullYear() &&
+              dateObj.getMonth() === today.getMonth() &&
+              dateObj.getDate() === today.getDate();
+            const hasNote = !!notes[dateKey]?.text;
 
-          return (
-            <Pressable
-              key={d}
-              onPress={() => {
-                if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelectDate(dateKey);
-              }}
-              style={({ pressed }) => ({
-                position: "absolute",
-                left: x - cellSize / 2,
-                top: y - cellSize / 2,
-                width: cellSize,
-                height: cellSize,
-                backgroundColor: shiftColor.color,
-                borderRadius: 5,
-                justifyContent: "center",
-                alignItems: "center",
-                borderWidth: isSelected ? 2.5 : isToday ? 1.5 : 0,
-                borderColor: isSelected ? "#FFFFFF" : "#00E5FF",
-                transform: [{ rotate: `${cellAngleDeg}deg` }],
-                opacity: pressed ? 0.7 : 1,
-                shadowColor: isSelected ? "#FFF" : shiftColor.color,
-                shadowOpacity: isSelected ? 0.9 : 0.4,
-                shadowRadius: isSelected ? 6 : 3,
-                elevation: isSelected ? 8 : 2,
-              })}
-            >
-              <Text
-                style={{
-                  color: "#FFFFFF",
-                  fontSize: Math.max(cellSize * 0.38, 8),
-                  fontWeight: "bold",
-                  transform: [{ rotate: `${-cellAngleDeg}deg` }],
-                  includeFontPadding: false,
+            return (
+              <Pressable
+                key={d}
+                onPress={() => {
+                  if (Platform.OS !== "web")
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onSelectDate(dateKey);
                 }}
+                style={({ pressed }) => ({
+                  position: "absolute",
+                  left: cx - cellW / 2,
+                  top: cy - cellH / 2,
+                  width: cellW,
+                  height: cellH,
+                  backgroundColor: shiftColor.color,
+                  borderRadius: 6,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderWidth: isSelected ? 2.5 : isToday ? 1.5 : 0,
+                  borderColor: isSelected ? "#FFFFFF" : "#00E5FF",
+                  opacity: pressed ? 0.75 : 1,
+                  shadowColor: isSelected ? "#FFF" : shiftColor.color,
+                  shadowOpacity: isSelected ? 0.95 : 0.35,
+                  shadowRadius: isSelected ? 7 : 3,
+                  elevation: isSelected ? 10 : 2,
+                })}
               >
-                {d}
-              </Text>
-              {hasNote && (
-                <View
+                <Text
                   style={{
-                    position: "absolute",
-                    bottom: 1,
-                    right: 1,
-                    width: 4,
-                    height: 4,
-                    borderRadius: 2,
-                    backgroundColor: "#FFF",
-                    transform: [{ rotate: `${-cellAngleDeg}deg` }],
+                    color: "#FFF",
+                    fontSize: Math.max(Math.round(cellW * 0.52), 9),
+                    fontWeight: "700",
+                    includeFontPadding: false,
+                    textAlign: "center",
                   }}
-                />
-              )}
-            </Pressable>
-          );
-        })}
+                >
+                  {d}
+                </Text>
+                {hasNote && (
+                  <View
+                    style={{
+                      position: "absolute",
+                      bottom: 2,
+                      width: 4,
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: "#FFF",
+                    }}
+                  />
+                )}
+              </Pressable>
+            );
+          })}
+        </Animated.View>
       </Animated.View>
 
       {/* Center details card — tap to open day detail */}
@@ -370,7 +403,10 @@ export function CircularCalendar({
               <View style={styles.centerHolidayRow}>
                 <Ionicons name="star" size={9} color={selHoliday.color || "#FF9800"} />
                 <Text
-                  style={[styles.centerHolidayText, { color: selHoliday.color || "#FF9800" }]}
+                  style={[
+                    styles.centerHolidayText,
+                    { color: selHoliday.color || "#FF9800" },
+                  ]}
                   numberOfLines={1}
                 >
                   {selHoliday.name}
@@ -379,14 +415,18 @@ export function CircularCalendar({
             )}
             {noteText ? (
               <View style={styles.centerNoteRow}>
-                <Ionicons name="document-text-outline" size={9} color="rgba(255,255,255,0.45)" />
+                <Ionicons
+                  name="document-text-outline"
+                  size={9}
+                  color="rgba(255,255,255,0.45)"
+                />
                 <Text style={styles.centerNoteText} numberOfLines={1}>
                   {noteText}
                 </Text>
               </View>
             ) : null}
             <View style={styles.tapHintRow}>
-              <Ionicons name="open-outline" size={8} color="rgba(255,255,255,0.3)" />
+              <Ionicons name="open-outline" size={8} color="rgba(255,255,255,0.28)" />
               <Text style={styles.tapHintText}>
                 {language === "ar" ? "تفاصيل" : "details"}
               </Text>
@@ -408,6 +448,12 @@ const styles = StyleSheet.create({
     position: "relative",
     alignSelf: "center",
   },
+  trackRing: {
+    position: "absolute",
+    backgroundColor: "rgba(255,255,255,0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
   glowRing: {
     position: "absolute",
     borderWidth: 2,
@@ -425,7 +471,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     shadowColor: "#00E5FF",
     shadowOpacity: 0.35,
-    shadowRadius: 10,
+    shadowRadius: 12,
     elevation: 6,
     gap: 1,
     paddingHorizontal: 10,
