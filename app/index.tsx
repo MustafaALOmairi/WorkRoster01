@@ -375,7 +375,7 @@ export default function CalendarScreen() {
 
       <View
         style={{ flex: 1, justifyContent: isCircularLayout ? "center" : "flex-start" }}
-        {...panResponder.panHandlers}
+        {...(isCircularLayout ? {} : panResponder.panHandlers)}
       >
         {isCircularLayout ? (
           <CircularCalendar
@@ -385,11 +385,17 @@ export default function CalendarScreen() {
             configStartDate={config.startDate}
             selectedDate={selectedDate}
             onSelectDate={setSelectedDate}
+            onOpenDayDetail={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              playSound("navigate");
+              router.push({ pathname: "/day-detail", params: { date: selectedDate } });
+            }}
             language={language}
             notes={notes}
             customShiftTimes={config.customShiftTimes}
             colors={colors}
             shiftIcons={activeStoreTheme?.shiftIcons as Record<string, string> | undefined}
+            holidays={config.holidays}
           />
         ) : themeBgImage ? (
           <View style={styles.calendarWithBg}>
@@ -407,7 +413,7 @@ export default function CalendarScreen() {
         )}
       </View>
 
-      <View style={[styles.detailCard, { backgroundColor: bottomCardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
+      {!isCircularLayout && <View style={[styles.detailCard, { backgroundColor: bottomCardBg, paddingBottom: insets.bottom + webBottomInset + 16 }]}>
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -478,7 +484,7 @@ export default function CalendarScreen() {
             </Text>
           </Pressable>
         </View>
-      </View>
+      </View>}
 
       <DrawerMenu
         visible={drawerVisible}
