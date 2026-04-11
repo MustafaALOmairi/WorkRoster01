@@ -9,6 +9,7 @@ import {
   ImageBackground,
   PanResponder,
 } from "react-native";
+import { CircularCalendar } from "@/components/CircularCalendar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -270,6 +271,7 @@ export default function CalendarScreen() {
 
   const themeBgImage = activeStoreTheme?.backgroundImage;
   const themeBgOpacity = activeStoreTheme?.backgroundOpacity ?? 0.15;
+  const isCircularLayout = activeStoreTheme?.calendarLayout === "circular";
 
   const calendarContent = (
     <>
@@ -371,8 +373,25 @@ export default function CalendarScreen() {
         </View>
       </View>
 
-      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-        {themeBgImage ? (
+      <View
+        style={{ flex: 1, justifyContent: isCircularLayout ? "center" : "flex-start" }}
+        {...panResponder.panHandlers}
+      >
+        {isCircularLayout ? (
+          <CircularCalendar
+            year={currentYear}
+            month={currentMonth}
+            pattern={config.pattern}
+            configStartDate={config.startDate}
+            selectedDate={selectedDate}
+            onSelectDate={setSelectedDate}
+            language={language}
+            notes={notes}
+            customShiftTimes={config.customShiftTimes}
+            colors={colors}
+            shiftIcons={activeStoreTheme?.shiftIcons as Record<string, string> | undefined}
+          />
+        ) : themeBgImage ? (
           <View style={styles.calendarWithBg}>
             <Image
               source={{ uri: themeBgImage }}

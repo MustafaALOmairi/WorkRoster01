@@ -26,6 +26,7 @@ Preferred communication style: Simple, everyday language.
 - **Animations**: react-native-reanimated for transitions
 - **Haptics**: expo-haptics for tactile feedback on interactions
 - **Key Libraries**: expo-print and expo-sharing for PDF export of schedules
+- **Circular Calendar**: Alternative radial calendar layout (`components/CircularCalendar.tsx`). Activated when a theme has `calendarLayout: "circular"` (e.g., "Cosmic Ring" theme). Days arranged in a ring with color-coded segments, selected day displayed in center, spring animation on month change.
 - **Android Widget**: Home screen widget support via `react-native-home-widget`. Shows today's shift type (Arabic label), time range, and date. Updates automatically when app opens. Widget color matches shift type. Activated via Expo config plugin (`plugins/withAndroidWidget.js`) during `expo prebuild`. Widget files in `plugins/android-widget/`. Widget update logic in `lib/widgetService.ts`, called from `ShiftContext` on config changes.
 
 ### Backend (Express)

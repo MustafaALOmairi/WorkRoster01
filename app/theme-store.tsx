@@ -53,6 +53,55 @@ function MiniCalendarPreview({ theme }: { theme: StoreTheme }) {
   };
   const headerTextColor = getHeaderTextColor(theme.headerBg, theme.textColor);
 
+  if (theme.calendarLayout === "circular") {
+    const miniSize = 120;
+    const miniCenter = miniSize / 2;
+    const miniR = miniSize * 0.42;
+    const miniDays = 28;
+    const miniCellSize = Math.min(10, (2 * Math.PI * miniR / miniDays) * 0.8);
+    return (
+      <View style={[miniStyles.calendar, { backgroundColor: theme.surfaceBg, borderColor: theme.borderColor, justifyContent: "center", alignItems: "center" }]}>
+        <View style={{ width: miniSize, height: miniSize, position: "relative" }}>
+          <View style={{
+            position: "absolute", width: miniSize, height: miniSize,
+            borderRadius: miniSize / 2, borderWidth: 1.5,
+            borderColor: "rgba(255,100,0,0.6)", left: 0, top: 0,
+          }} />
+          {Array.from({ length: miniDays }, (_, i) => {
+            const shiftType = SHIFT_CYCLE[i % 4];
+            const shiftColor = theme.shiftColors[shiftType];
+            const angle = (i / miniDays) * 2 * Math.PI - Math.PI / 2;
+            const x = miniCenter + miniR * Math.cos(angle);
+            const y = miniCenter + miniR * Math.sin(angle);
+            return (
+              <View key={i} style={{
+                position: "absolute",
+                left: x - miniCellSize / 2,
+                top: y - miniCellSize / 2,
+                width: miniCellSize,
+                height: miniCellSize,
+                backgroundColor: shiftColor,
+                borderRadius: 2,
+              }} />
+            );
+          })}
+          <View style={{
+            position: "absolute",
+            width: miniSize * 0.38, height: miniSize * 0.38,
+            borderRadius: miniSize * 0.19,
+            left: miniCenter - miniSize * 0.19,
+            top: miniCenter - miniSize * 0.19,
+            backgroundColor: "#0F1923",
+            borderWidth: 1.5, borderColor: "#00E5FF",
+            justifyContent: "center", alignItems: "center",
+          }}>
+            <Text style={{ color: "#FFF", fontSize: 11, fontWeight: "bold" }}>14</Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[miniStyles.calendar, { backgroundColor: theme.surfaceBg, borderColor: theme.borderColor }]}>
       <View style={[miniStyles.calHeader, { backgroundColor: theme.headerBg }]}>

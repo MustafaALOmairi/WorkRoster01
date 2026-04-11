@@ -58,6 +58,7 @@ export interface StoreTheme {
   showIconInCell?: boolean;
   selectionBg?: string;
   selectionBorder?: string;
+  calendarLayout?: "grid" | "circular";
   backgroundImage?: string;
   backgroundOpacity?: number;
 }
@@ -258,6 +259,31 @@ export const STORE_THEMES: StoreTheme[] = [
     showIconInCell: false,
     selectionBg: "rgba(103,32,200,0.15)",
     selectionBorder: "#6720C8",
+  },
+  {
+    id: "cosmic_ring",
+    name: "Cosmic Ring",
+    nameAr: "حلقة كونية",
+    description: "Circular radial calendar with cosmic dark style",
+    descriptionAr: "تقويم دائري بأسلوب كوني داكن",
+    mode: "dark",
+    accent: "#00E5FF",
+    shiftColors: { morning: "#FF6B00", evening: "#E91E8C", night: "#3C82FF", rest: "#E53935" },
+    headerBg: "#0A0E1A",
+    dayHeaderBg: "#111827",
+    surfaceBg: "#0A0E1A",
+    cardBg: "#111827",
+    textColor: "#E8F4F8",
+    textSecondary: "#607080",
+    borderColor: "#1E2D40",
+    bottomCardBg: "#111827",
+    bottomCardText: "#E8F4F8",
+    shiftIcons: { morning: "sunny", evening: "partly-sunny", night: "star", rest: "close-circle" },
+    dayCellRadius: 6,
+    showIconInCell: false,
+    selectionBg: "rgba(0,229,255,0.15)",
+    selectionBorder: "#00E5FF",
+    calendarLayout: "circular",
   },
 ];
 
