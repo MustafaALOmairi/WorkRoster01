@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "yTVvTt2FB2sl1vo22oCOM"
+uri = "file://USER_GUIDE.md"
+type = "text"
+title = "WorkRoster — دليل المستخدم الشامل / Complete User Guide"
