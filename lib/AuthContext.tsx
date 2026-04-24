@@ -15,6 +15,7 @@ interface AuthContextValue {
   register: (username: string, password: string, email?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUsername: (newUsername: string) => void;
+  refreshAuth: () => Promise<void>;
   syncToServer: (data: { shiftConfig?: any; notes?: any; themePrefs?: any; aiThemes?: any }) => Promise<void>;
   loadFromServer: () => Promise<{ shiftConfig: any; notes: any; themePrefs: any; aiThemes: any } | null>;
 }
@@ -97,6 +98,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const refreshAuth = useCallback(async () => {
+    try {
+      const res = await apiRequest("GET", "/api/auth/me");
+      const data = await res.json();
+      const authUser = { id: data.id, username: data.username, email: data.email };
+      setUser(authUser);
+      await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authUser));
+    } catch {
+      setUser(null);
+      await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }, []);
+
   const syncToServer = useCallback(async (data: { shiftConfig?: any; notes?: any; themePrefs?: any; aiThemes?: any }) => {
     if (!user) return;
     try {
@@ -123,9 +137,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     updateUsername,
+    refreshAuth,
     syncToServer,
     loadFromServer,
-  }), [user, isLoading, login, register, logout, updateUsername, syncToServer, loadFromServer]);
+  }), [user, isLoading, login, register, logout, updateUsername, refreshAuth, syncToServer, loadFromServer]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
