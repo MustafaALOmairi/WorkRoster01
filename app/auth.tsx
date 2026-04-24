@@ -7,9 +7,11 @@ import {
   TextInput,
   Platform,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -19,6 +21,7 @@ import { useAppTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useSound } from "@/lib/SoundContext";
 import { loadServerData, useDataReload } from "@/lib/DataSync";
+import { getApiUrl } from "@/lib/query-client";
 
 function LoggedInView() {
   const insets = useSafeAreaInsets();
@@ -30,6 +33,7 @@ function LoggedInView() {
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
   const [loggingOut, setLoggingOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -38,6 +42,56 @@ function LoggedInView() {
     await logout();
     setLoggingOut(false);
     router.back();
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t("حذف الحساب", "Delete Account"),
+      t(
+        "هل أنت متأكد من حذف حسابك؟ سيتم حذف جميع بياناتك المحفوظة على السحابة بشكل نهائي.",
+        "Are you sure you want to delete your account? All your cloud data will be permanently deleted."
+      ),
+      [
+        { text: t("إلغاء", "Cancel"), style: "cancel" },
+        {
+          text: t("حذف نهائي", "Delete Permanently"),
+          style: "destructive",
+          onPress: confirmDeleteAccount,
+        },
+      ]
+    );
+  };
+
+  const confirmDeleteAccount = async () => {
+    setDeletingAccount(true);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      const url = new URL("/api/auth/delete-account", getApiUrl());
+      const res = await fetch(url.toString(), {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (res.ok) {
+        // Clear all local storage
+        await AsyncStorage.clear();
+        await logout();
+        playSound("navigate");
+        router.replace("/");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        Alert.alert(
+          t("خطأ", "Error"),
+          t("فشل حذف الحساب، حاول مرة أخرى", "Failed to delete account, please try again")
+        );
+      }
+    } catch {
+      Alert.alert(
+        t("خطأ", "Error"),
+        t("تعذر الاتصال بالخادم", "Could not connect to server")
+      );
+    } finally {
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -108,7 +162,7 @@ function LoggedInView() {
 
         <Pressable
           onPress={handleLogout}
-          disabled={loggingOut}
+          disabled={loggingOut || deletingAccount}
           style={[styles.logoutBtn, { borderColor: "#EF4444" }]}
           testID="logout-btn"
         >
@@ -123,6 +177,34 @@ function LoggedInView() {
             </>
           )}
         </Pressable>
+
+        {/* Delete Account — required by Apple App Store */}
+        <View style={styles.deleteSection}>
+          <View style={styles.deleteDivider} />
+          <Text style={[styles.deleteWarningText, { color: colors.textSecondary }]}>
+            {t(
+              "حذف الحساب سيؤدي إلى إزالة جميع بياناتك من السحابة بشكل دائم.",
+              "Deleting your account will permanently remove all your cloud data."
+            )}
+          </Text>
+          <Pressable
+            onPress={handleDeleteAccount}
+            disabled={deletingAccount || loggingOut}
+            style={[styles.deleteBtn, { opacity: deletingAccount ? 0.6 : 1 }]}
+            testID="delete-account-btn"
+          >
+            {deletingAccount ? (
+              <ActivityIndicator color="#9E0000" size="small" />
+            ) : (
+              <>
+                <Ionicons name="trash-outline" size={18} color="#9E0000" />
+                <Text style={styles.deleteBtnText}>
+                  {t("حذف الحساب نهائياً", "Delete Account Permanently")}
+                </Text>
+              </>
+            )}
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -540,5 +622,40 @@ const styles = StyleSheet.create({
     fontFamily: "Cairo_700Bold",
     fontSize: 16,
     color: "#EF4444",
+  },
+  deleteSection: {
+    marginTop: 32,
+    alignItems: "center",
+    gap: 10,
+    paddingBottom: 8,
+  },
+  deleteDivider: {
+    width: "100%",
+    height: 1,
+    backgroundColor: "rgba(158,0,0,0.12)",
+    marginBottom: 4,
+  },
+  deleteWarningText: {
+    fontFamily: "Cairo_400Regular",
+    fontSize: 12,
+    textAlign: "center",
+    paddingHorizontal: 8,
+  },
+  deleteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingVertical: 11,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "rgba(158,0,0,0.35)",
+    backgroundColor: "rgba(158,0,0,0.06)",
+  },
+  deleteBtnText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+    color: "#9E0000",
   },
 });

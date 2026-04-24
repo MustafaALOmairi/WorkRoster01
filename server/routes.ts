@@ -146,6 +146,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.delete("/api/auth/delete-account", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) {
+        res.status(401).json({ error: "Not authenticated" });
+        return;
+      }
+      const userId = req.session.userId;
+      // Delete all user data first (FK constraint), then the user
+      await pool.query("DELETE FROM user_data WHERE user_id = $1", [userId]);
+      await pool.query("DELETE FROM users WHERE id = $1", [userId]);
+      req.session.destroy(() => {
+        res.json({ ok: true });
+      });
+    } catch (err: any) {
+      console.error("Delete account error:", err?.message);
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   app.get("/api/auth/me", (req: Request, res: Response) => {
     if (!req.session.userId) {
       res.status(401).json({ error: "Not authenticated" });
