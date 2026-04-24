@@ -146,6 +146,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  app.post("/api/auth/change-username", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+      const { newUsername } = req.body;
+      if (!newUsername || newUsername.trim().length < 3) {
+        res.status(400).json({ error: "USERNAME_TOO_SHORT" }); return;
+      }
+      const trimmed = newUsername.trim();
+      const existing = await pool.query("SELECT id FROM users WHERE username = $1 AND id != $2", [trimmed, req.session.userId]);
+      if (existing.rows.length > 0) { res.status(400).json({ error: "USERNAME_TAKEN" }); return; }
+      await pool.query("UPDATE users SET username = $1 WHERE id = $2", [trimmed, req.session.userId]);
+      req.session.username = trimmed;
+      res.json({ ok: true, username: trimmed });
+    } catch (err: any) {
+      console.error("Change username error:", err?.message);
+      res.status(500).json({ error: "Failed to change username" });
+    }
+  });
+
+  app.post("/api/auth/change-password", async (req: Request, res: Response) => {
+    try {
+      if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword) { res.status(400).json({ error: "MISSING_FIELDS" }); return; }
+      if (newPassword.length < 6) { res.status(400).json({ error: "PASSWORD_TOO_SHORT" }); return; }
+      const result = await pool.query("SELECT password FROM users WHERE id = $1", [req.session.userId]);
+      if (!result.rows.length) { res.status(404).json({ error: "User not found" }); return; }
+      const valid = await bcrypt.compare(currentPassword, result.rows[0].password);
+      if (!valid) { res.status(401).json({ error: "WRONG_PASSWORD" }); return; }
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashed, req.session.userId]);
+      res.json({ ok: true });
+    } catch (err: any) {
+      console.error("Change password error:", err?.message);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
   app.delete("/api/auth/delete-account", async (req: Request, res: Response) => {
     try {
       if (!req.session.userId) {

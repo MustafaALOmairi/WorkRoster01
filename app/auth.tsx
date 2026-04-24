@@ -23,18 +23,135 @@ import { useSound } from "@/lib/SoundContext";
 import { loadServerData, useDataReload } from "@/lib/DataSync";
 import { getApiUrl } from "@/lib/query-client";
 
+// ─── Logged-in: Account Management ───────────────────────────────────────────
 function LoggedInView() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t, isDark } = useAppTheme();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUsername } = useAuth();
   const { playSound } = useSound();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
+  const inputBg = isDark ? "#0D1117" : "#FFF";
+  const borderColor = isDark ? "#30363D" : colors.border;
+
+  // panel open state
+  const [panel, setPanel] = useState<"none" | "username" | "password">("none");
+
+  // change username
+  const [newUsername, setNewUsername] = useState("");
+  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState("");
+  const [usernameSuccess, setUsernameSuccess] = useState(false);
+
+  // change password
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showCurPw, setShowCurPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState("");
+  const [pwSuccess, setPwSuccess] = useState(false);
+
+  // danger actions
   const [loggingOut, setLoggingOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  const togglePanel = (p: "username" | "password") => {
+    setPanel((prev) => (prev === p ? "none" : p));
+    setUsernameError(""); setUsernameSuccess(false);
+    setPwError(""); setPwSuccess(false);
+  };
+
+  // ── Change username ──────────────────────────────────────────────
+  const handleChangeUsername = async () => {
+    setUsernameError(""); setUsernameSuccess(false);
+    const trimmed = newUsername.trim();
+    if (trimmed.length < 3) {
+      setUsernameError(t("اسم المستخدم يجب أن يكون 3 أحرف على الأقل", "Username must be at least 3 characters"));
+      return;
+    }
+    setUsernameLoading(true);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const url = new URL("/api/auth/change-username", getApiUrl());
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUsername: trimmed }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        updateUsername(trimmed);
+        setUsernameSuccess(true);
+        setNewUsername("");
+        playSound("success");
+      } else {
+        if (data.error === "USERNAME_TAKEN")
+          setUsernameError(t("اسم المستخدم مستخدم بالفعل", "Username already taken"));
+        else if (data.error === "USERNAME_TOO_SHORT")
+          setUsernameError(t("اسم المستخدم قصير جداً", "Username is too short"));
+        else
+          setUsernameError(t("حدث خطأ، حاول مرة أخرى", "Something went wrong"));
+        playSound("error");
+      }
+    } catch {
+      setUsernameError(t("تعذر الاتصال بالخادم", "Could not connect to server"));
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
+
+  // ── Change password ──────────────────────────────────────────────
+  const handleChangePassword = async () => {
+    setPwError(""); setPwSuccess(false);
+    if (!currentPw || !newPw || !confirmPw) {
+      setPwError(t("يرجى ملء جميع الحقول", "Please fill all fields"));
+      return;
+    }
+    if (newPw.length < 6) {
+      setPwError(t("كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل", "New password must be at least 6 characters"));
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setPwError(t("كلمتا المرور غير متطابقتين", "Passwords don't match"));
+      return;
+    }
+    setPwLoading(true);
+    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const url = new URL("/api/auth/change-password", getApiUrl());
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPwSuccess(true);
+        setCurrentPw(""); setNewPw(""); setConfirmPw("");
+        playSound("success");
+      } else {
+        if (data.error === "WRONG_PASSWORD")
+          setPwError(t("كلمة المرور الحالية غير صحيحة", "Current password is incorrect"));
+        else if (data.error === "PASSWORD_TOO_SHORT")
+          setPwError(t("كلمة المرور الجديدة قصيرة جداً", "New password is too short"));
+        else
+          setPwError(t("حدث خطأ، حاول مرة أخرى", "Something went wrong"));
+        playSound("error");
+      }
+    } catch {
+      setPwError(t("تعذر الاتصال بالخادم", "Could not connect to server"));
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  // ── Sign out ─────────────────────────────────────────────────────
   const handleLogout = async () => {
     setLoggingOut(true);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -44,71 +161,48 @@ function LoggedInView() {
     router.back();
   };
 
+  // ── Delete account (2-step) ───────────────────────────────────────
   const handleDeleteAccount = () => {
-    // Step 1: initial confirmation
     Alert.alert(
       t("حذف الحساب", "Delete Account"),
-      t(
-        "هل أنت متأكد من أنك تريد حذف الحساب؟",
-        "Are you sure you want to delete your account?"
-      ),
+      t("هل أنت متأكد من أنك تريد حذف الحساب؟", "Are you sure you want to delete your account?"),
       [
         { text: t("إلغاء", "Cancel"), style: "cancel" },
-        {
-          text: t("نعم، تابع", "Yes, Continue"),
-          style: "destructive",
-          onPress: handleDeleteConfirmStep2,
-        },
+        { text: t("نعم، تابع", "Yes, Continue"), style: "destructive", onPress: handleDeleteStep2 },
       ]
     );
   };
 
-  const handleDeleteConfirmStep2 = () => {
-    // Step 2: final irreversible confirmation
+  const handleDeleteStep2 = () => {
     Alert.alert(
       t("تأكيد نهائي", "Final Confirmation"),
       t(
-        "سيتم حذف حسابك وجميع بياناتك المحفوظة على السحابة بشكل دائم ولا يمكن التراجع عن هذا الإجراء.",
-        "Your account and all cloud data will be permanently deleted. This action cannot be undone."
+        "سيتم حذف حسابك وجميع بياناتك من السحابة بشكل دائم ولا يمكن التراجع عن هذا الإجراء.",
+        "Your account and all cloud data will be permanently deleted. This cannot be undone."
       ),
       [
         { text: t("إلغاء", "Cancel"), style: "cancel" },
-        {
-          text: t("احذف الحساب", "Delete Account"),
-          style: "destructive",
-          onPress: confirmDeleteAccount,
-        },
+        { text: t("احذف الحساب", "Delete Account"), style: "destructive", onPress: confirmDelete },
       ]
     );
   };
 
-  const confirmDeleteAccount = async () => {
+  const confirmDelete = async () => {
     setDeletingAccount(true);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       const url = new URL("/api/auth/delete-account", getApiUrl());
-      const res = await fetch(url.toString(), {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const res = await fetch(url.toString(), { method: "DELETE", credentials: "include" });
       if (res.ok) {
-        // Clear all local storage
         await AsyncStorage.clear();
         await logout();
         playSound("navigate");
         router.replace("/");
       } else {
-        const data = await res.json().catch(() => ({}));
-        Alert.alert(
-          t("خطأ", "Error"),
-          t("فشل حذف الحساب، حاول مرة أخرى", "Failed to delete account, please try again")
-        );
+        Alert.alert(t("خطأ", "Error"), t("فشل حذف الحساب، حاول مرة أخرى", "Failed to delete account, try again"));
       }
     } catch {
-      Alert.alert(
-        t("خطأ", "Error"),
-        t("تعذر الاتصال بالخادم", "Could not connect to server")
-      );
+      Alert.alert(t("خطأ", "Error"), t("تعذر الاتصال بالخادم", "Could not connect to server"));
     } finally {
       setDeletingAccount(false);
     }
@@ -116,120 +210,237 @@ function LoggedInView() {
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor, paddingTop: insets.top + webTopInset }]}>
+      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => { playSound("navigate"); router.back(); }} hitSlop={12}>
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </Pressable>
         <Text style={[styles.title, { color: colors.text }]}>
-          {t("الحساب", "Account")}
+          {t("إدارة الحساب", "Account Management")}
         </Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 40 }}>
-        <View style={styles.iconSection}>
-          <View style={[styles.iconCircle, { backgroundColor: colors.accent + "20" }]}>
-            <Ionicons name="person-circle" size={64} color={colors.accent} />
+      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+
+        {/* Avatar + name */}
+        <View style={styles.avatarSection}>
+          <View style={[styles.avatarCircle, { backgroundColor: colors.accent + "22" }]}>
+            <Ionicons name="person-circle" size={68} color={colors.accent} />
           </View>
-          <Text style={[styles.usernameText, { color: colors.text }]}>
-            {user?.username}
-          </Text>
-          <View style={styles.syncBadge}>
-            <Ionicons name="cloud-done" size={16} color="#43A047" />
+          <Text style={[styles.displayName, { color: colors.text }]}>{user?.username}</Text>
+          {user?.email ? (
+            <Text style={[styles.displayEmail, { color: colors.textSecondary }]}>{user.email}</Text>
+          ) : null}
+          <View style={styles.syncRow}>
+            <Ionicons name="cloud-done" size={14} color="#43A047" />
             <Text style={[styles.syncText, { color: "#43A047" }]}>
               {t("البيانات محفوظة تلقائياً", "Data auto-saved")}
             </Text>
           </View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: cardBg }]}>
-          <View style={styles.infoRow}>
-            <Ionicons name="person-outline" size={22} color={colors.accent} />
-            <View style={styles.infoText}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                {t("اسم المستخدم", "Username")}
-              </Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {user?.username}
-              </Text>
+        {/* ── Section: Account Settings ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          {t("إعدادات الحساب", "Account Settings")}
+        </Text>
+
+        <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
+
+          {/* Change username row */}
+          <Pressable
+            style={styles.menuRow}
+            onPress={() => togglePanel("username")}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: colors.accent + "18" }]}>
+              <Ionicons name="person-outline" size={20} color={colors.accent} />
             </View>
-          </View>
-          {user?.email && (
-            <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={22} color={colors.accent} />
-              <View style={styles.infoText}>
-                <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                  {t("البريد الإلكتروني", "Email")}
-                </Text>
-                <Text style={[styles.infoValue, { color: colors.text }]}>
-                  {user.email}
-                </Text>
+            <Text style={[styles.menuLabel, { color: colors.text }]}>
+              {t("تغيير اسم المستخدم", "Change Username")}
+            </Text>
+            <Ionicons
+              name={panel === "username" ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textSecondary}
+            />
+          </Pressable>
+
+          {panel === "username" && (
+            <View style={[styles.panelBody, { borderTopColor: borderColor }]}>
+              <Text style={[styles.panelCurrentLabel, { color: colors.textSecondary }]}>
+                {t("الاسم الحالي: ", "Current: ")}<Text style={{ color: colors.text, fontFamily: "Cairo_700Bold" }}>{user?.username}</Text>
+              </Text>
+              <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
+                <Ionicons name="at" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("اسم المستخدم الجديد", "New username")}
+                  placeholderTextColor={colors.textSecondary}
+                  value={newUsername}
+                  onChangeText={(v) => { setNewUsername(v); setUsernameError(""); setUsernameSuccess(false); }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
               </View>
+              {usernameError ? <Text style={styles.errorText}>{usernameError}</Text> : null}
+              {usernameSuccess ? (
+                <View style={styles.successRow}>
+                  <Ionicons name="checkmark-circle" size={16} color="#43A047" />
+                  <Text style={styles.successText}>{t("تم تغيير اسم المستخدم بنجاح", "Username updated successfully")}</Text>
+                </View>
+              ) : null}
+              <Pressable
+                style={[styles.panelBtn, { backgroundColor: colors.accent, opacity: usernameLoading ? 0.7 : 1 }]}
+                onPress={handleChangeUsername}
+                disabled={usernameLoading}
+              >
+                {usernameLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.panelBtnText}>{t("حفظ", "Save")}</Text>
+                }
+              </Pressable>
             </View>
           )}
-          <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
-            <Ionicons name="sync-outline" size={22} color={colors.accent} />
-            <View style={styles.infoText}>
-              <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                {t("المزامنة", "Sync")}
-              </Text>
-              <Text style={[styles.infoValue, { color: colors.text }]}>
-                {t("تلقائية", "Automatic")}
-              </Text>
+
+          <View style={[styles.divider, { backgroundColor: borderColor }]} />
+
+          {/* Change password row */}
+          <Pressable
+            style={styles.menuRow}
+            onPress={() => togglePanel("password")}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#F59E0B18" }]}>
+              <Ionicons name="lock-closed-outline" size={20} color="#F59E0B" />
             </View>
-          </View>
+            <Text style={[styles.menuLabel, { color: colors.text }]}>
+              {t("تغيير كلمة المرور", "Change Password")}
+            </Text>
+            <Ionicons
+              name={panel === "password" ? "chevron-up" : "chevron-down"}
+              size={18}
+              color={colors.textSecondary}
+            />
+          </Pressable>
+
+          {panel === "password" && (
+            <View style={[styles.panelBody, { borderTopColor: borderColor }]}>
+              {/* Current password */}
+              <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
+                <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("كلمة المرور الحالية", "Current password")}
+                  placeholderTextColor={colors.textSecondary}
+                  value={currentPw}
+                  onChangeText={(v) => { setCurrentPw(v); setPwError(""); setPwSuccess(false); }}
+                  secureTextEntry={!showCurPw}
+                />
+                <Pressable onPress={() => setShowCurPw(!showCurPw)} hitSlop={8}>
+                  <Ionicons name={showCurPw ? "eye-off-outline" : "eye-outline"} size={18} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+              {/* New password */}
+              <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
+                <Ionicons name="key-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("كلمة المرور الجديدة", "New password")}
+                  placeholderTextColor={colors.textSecondary}
+                  value={newPw}
+                  onChangeText={(v) => { setNewPw(v); setPwError(""); setPwSuccess(false); }}
+                  secureTextEntry={!showNewPw}
+                />
+                <Pressable onPress={() => setShowNewPw(!showNewPw)} hitSlop={8}>
+                  <Ionicons name={showNewPw ? "eye-off-outline" : "eye-outline"} size={18} color={colors.textSecondary} />
+                </Pressable>
+              </View>
+              {/* Confirm new password */}
+              <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor }]}>
+                <Ionicons name="checkmark-circle-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={[styles.input, { color: colors.text }]}
+                  placeholder={t("تأكيد كلمة المرور الجديدة", "Confirm new password")}
+                  placeholderTextColor={colors.textSecondary}
+                  value={confirmPw}
+                  onChangeText={(v) => { setConfirmPw(v); setPwError(""); setPwSuccess(false); }}
+                  secureTextEntry={!showNewPw}
+                />
+              </View>
+              {pwError ? <Text style={styles.errorText}>{pwError}</Text> : null}
+              {pwSuccess ? (
+                <View style={styles.successRow}>
+                  <Ionicons name="checkmark-circle" size={16} color="#43A047" />
+                  <Text style={styles.successText}>{t("تم تغيير كلمة المرور بنجاح", "Password changed successfully")}</Text>
+                </View>
+              ) : null}
+              <Pressable
+                style={[styles.panelBtn, { backgroundColor: "#F59E0B", opacity: pwLoading ? 0.7 : 1 }]}
+                onPress={handleChangePassword}
+                disabled={pwLoading}
+              >
+                {pwLoading
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={styles.panelBtnText}>{t("حفظ", "Save")}</Text>
+                }
+              </Pressable>
+            </View>
+          )}
         </View>
+
+        {/* ── Section: Session ── */}
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 28 }]}>
+          {t("الجلسة", "Session")}
+        </Text>
 
         <Pressable
           onPress={handleLogout}
           disabled={loggingOut || deletingAccount}
-          style={[styles.logoutBtn, { borderColor: "#EF4444" }]}
+          style={[styles.actionRow, { backgroundColor: cardBg, borderColor }]}
           testID="logout-btn"
         >
-          {loggingOut ? (
-            <ActivityIndicator color="#EF4444" size="small" />
-          ) : (
-            <>
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-              <Text style={styles.logoutBtnText}>
-                {t("تسجيل الخروج", "Sign Out")}
-              </Text>
-            </>
-          )}
+          <View style={[styles.menuIcon, { backgroundColor: "#EF444418" }]}>
+            {loggingOut
+              ? <ActivityIndicator color="#EF4444" size="small" />
+              : <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+            }
+          </View>
+          <Text style={[styles.menuLabel, { color: "#EF4444" }]}>
+            {t("تسجيل الخروج", "Sign Out")}
+          </Text>
         </Pressable>
 
-        {/* Delete Account — required by Apple App Store */}
-        <View style={styles.deleteSection}>
-          <View style={styles.deleteDivider} />
-          <Text style={[styles.deleteWarningText, { color: colors.textSecondary }]}>
-            {t(
-              "حذف الحساب سيؤدي إلى إزالة جميع بياناتك من السحابة بشكل دائم.",
-              "Deleting your account will permanently remove all your cloud data."
-            )}
-          </Text>
-          <Pressable
-            onPress={handleDeleteAccount}
-            disabled={deletingAccount || loggingOut}
-            style={[styles.deleteBtn, { opacity: deletingAccount ? 0.6 : 1 }]}
-            testID="delete-account-btn"
-          >
-            {deletingAccount ? (
-              <ActivityIndicator color="#9E0000" size="small" />
-            ) : (
-              <>
-                <Ionicons name="trash-outline" size={18} color="#9E0000" />
-                <Text style={styles.deleteBtnText}>
-                  {t("حذف الحساب نهائياً", "Delete Account Permanently")}
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </View>
+        {/* ── Section: Danger Zone ── */}
+        <Text style={[styles.sectionLabel, { color: "#EF4444", marginTop: 28 }]}>
+          {t("المنطقة الخطرة", "Danger Zone")}
+        </Text>
+
+        <Pressable
+          onPress={handleDeleteAccount}
+          disabled={deletingAccount || loggingOut}
+          style={[styles.actionRow, { backgroundColor: cardBg, borderColor: "#9E000040", borderWidth: 1 }]}
+          testID="delete-account-btn"
+        >
+          <View style={[styles.menuIcon, { backgroundColor: "#9E000018" }]}>
+            {deletingAccount
+              ? <ActivityIndicator color="#9E0000" size="small" />
+              : <Ionicons name="trash-outline" size={20} color="#9E0000" />
+            }
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.menuLabel, { color: "#9E0000" }]}>
+              {t("حذف الحساب", "Delete Account")}
+            </Text>
+            <Text style={[styles.dangerSubtext, { color: "#9E000099" }]}>
+              {t("يحذف جميع البيانات نهائياً", "Permanently deletes all data")}
+            </Text>
+          </View>
+        </Pressable>
       </ScrollView>
     </View>
   );
 }
 
+// ─── Login / Register screen ──────────────────────────────────────────────────
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
@@ -251,9 +462,7 @@ export default function AuthScreen() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  if (user) {
-    return <LoggedInView />;
-  }
+  if (user) return <LoggedInView />;
 
   const handleSubmit = async () => {
     setError("");
@@ -289,9 +498,7 @@ export default function AuthScreen() {
       playSound("success");
       if (isLogin) {
         const loaded = await loadServerData();
-        if (loaded) {
-          triggerReload();
-        }
+        if (loaded) triggerReload();
       }
       setLoading(false);
       router.back();
@@ -299,17 +506,16 @@ export default function AuthScreen() {
       setLoading(false);
       playSound("error");
       const errCode = result.error || "";
-      if (errCode === "INVALID_CREDENTIALS") {
+      if (errCode === "INVALID_CREDENTIALS")
         setError(t("اسم المستخدم أو كلمة المرور غير صحيحة", "Invalid username/email or password"));
-      } else if (errCode === "USERNAME_TAKEN") {
+      else if (errCode === "USERNAME_TAKEN")
         setError(t("اسم المستخدم مستخدم بالفعل", "Username already taken"));
-      } else if (errCode === "EMAIL_TAKEN") {
+      else if (errCode === "EMAIL_TAKEN")
         setError(t("البريد الإلكتروني مستخدم بالفعل", "Email already taken"));
-      } else if (errCode === "INVALID_EMAIL") {
+      else if (errCode === "INVALID_EMAIL")
         setError(t("البريد الإلكتروني غير صحيح", "Invalid email address"));
-      } else {
+      else
         setError(t("حدث خطأ، حاول مرة أخرى", "Something went wrong, try again"));
-      }
     }
   };
 
@@ -331,26 +537,22 @@ export default function AuthScreen() {
         </View>
 
         <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.iconSection}>
-            <View style={[styles.iconCircle, { backgroundColor: colors.accent + "20" }]}>
-              <Ionicons name="person-circle" size={64} color={colors.accent} />
+          <View style={styles.avatarSection}>
+            <View style={[styles.avatarCircle, { backgroundColor: colors.accent + "22" }]}>
+              <Ionicons name="person-circle" size={68} color={colors.accent} />
             </View>
           </View>
 
-          <View style={[styles.card, { backgroundColor: cardBg }]}>
+          <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border }]}>
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                {isLogin
-                  ? t("اسم المستخدم أو البريد الإلكتروني", "Username or Email")
-                  : t("اسم المستخدم", "Username")}
+                {isLogin ? t("اسم المستخدم أو البريد الإلكتروني", "Username or Email") : t("اسم المستخدم", "Username")}
               </Text>
               <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor: colors.border }]}>
-                <Ionicons name={isLogin ? "person-outline" : "person-outline"} size={20} color={colors.textSecondary} />
+                <Ionicons name="person-outline" size={20} color={colors.textSecondary} />
                 <TextInput
                   style={[styles.input, { color: colors.text }]}
-                  placeholder={isLogin
-                    ? t("أدخل اسم المستخدم أو الإيميل", "Enter username or email")
-                    : t("أدخل اسم المستخدم", "Enter username")}
+                  placeholder={isLogin ? t("أدخل اسم المستخدم أو الإيميل", "Enter username or email") : t("أدخل اسم المستخدم", "Enter username")}
                   placeholderTextColor={colors.textSecondary}
                   value={username}
                   onChangeText={setUsername}
@@ -400,11 +602,7 @@ export default function AuthScreen() {
                   testID="auth-password"
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={8}>
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={20}
-                    color={colors.textSecondary}
-                  />
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textSecondary} />
                 </Pressable>
               </View>
             </View>
@@ -442,43 +640,27 @@ export default function AuthScreen() {
               style={[styles.submitBtn, { backgroundColor: colors.accent, opacity: loading ? 0.7 : 1 }]}
               testID="auth-submit"
             >
-              {loading ? (
-                <ActivityIndicator color="#FFF" size="small" />
-              ) : (
-                <Text style={styles.submitBtnText}>
-                  {isLogin ? t("دخول", "Sign In") : t("إنشاء حساب", "Create Account")}
-                </Text>
-              )}
+              {loading
+                ? <ActivityIndicator color="#FFF" size="small" />
+                : <Text style={styles.submitBtnText}>{isLogin ? t("دخول", "Sign In") : t("إنشاء حساب", "Create Account")}</Text>
+              }
             </Pressable>
           </View>
 
           <Pressable
-            onPress={() => {
-              playSound("tap");
-              setIsLogin(!isLogin);
-              setError("");
-              setEmail("");
-              setConfirmPassword("");
-            }}
+            onPress={() => { playSound("tap"); setIsLogin(!isLogin); setError(""); setEmail(""); setConfirmPassword(""); }}
             style={styles.switchRow}
           >
             <Text style={[styles.switchText, { color: colors.textSecondary }]}>
-              {isLogin
-                ? t("ليس لديك حساب؟", "Don't have an account?")
-                : t("لديك حساب بالفعل؟", "Already have an account?")}
+              {isLogin ? t("ليس لديك حساب؟", "Don't have an account?") : t("لديك حساب بالفعل؟", "Already have an account?")}
             </Text>
             <Text style={[styles.switchLink, { color: colors.accent }]}>
-              {isLogin
-                ? t(" إنشاء حساب", " Create Account")
-                : t(" تسجيل الدخول", " Sign In")}
+              {isLogin ? t(" إنشاء حساب", " Create Account") : t(" تسجيل الدخول", " Sign In")}
             </Text>
           </Pressable>
 
           <View style={styles.skipSection}>
-            <Pressable
-              onPress={() => { playSound("navigate"); router.back(); }}
-              style={styles.skipBtn}
-            >
+            <Pressable onPress={() => { playSound("navigate"); router.back(); }} style={styles.skipBtn}>
               <Text style={[styles.skipText, { color: colors.textSecondary }]}>
                 {t("متابعة بدون حساب", "Continue without account")}
               </Text>
@@ -499,183 +681,92 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
   },
-  title: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 22,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  iconSection: {
+  title: { fontFamily: "Cairo_700Bold", fontSize: 20 },
+  content: { flex: 1, paddingHorizontal: 16 },
+
+  // Avatar section
+  avatarSection: { alignItems: "center", paddingVertical: 24, gap: 6 },
+  avatarCircle: { width: 90, height: 90, borderRadius: 45, alignItems: "center", justifyContent: "center" },
+  displayName: { fontFamily: "Cairo_700Bold", fontSize: 20 },
+  displayEmail: { fontFamily: "Cairo_400Regular", fontSize: 13 },
+  syncRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
+  syncText: { fontFamily: "Cairo_600SemiBold", fontSize: 12 },
+
+  // Section label
+  sectionLabel: { fontFamily: "Cairo_600SemiBold", fontSize: 12, marginBottom: 8, marginLeft: 4, letterSpacing: 0.5 },
+
+  // Card
+  card: { borderRadius: 14, borderWidth: 1, overflow: "hidden" },
+
+  // Menu row
+  menuRow: {
+    flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 28,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
   },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  menuLabel: { flex: 1, fontFamily: "Cairo_600SemiBold", fontSize: 15 },
+
+  divider: { height: 1, marginHorizontal: 16 },
+
+  // Panel
+  panelBody: {
+    padding: 16,
+    paddingTop: 14,
+    gap: 10,
+    borderTopWidth: 1,
+  },
+  panelCurrentLabel: { fontFamily: "Cairo_400Regular", fontSize: 13 },
+  panelBtn: {
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 11,
+    borderRadius: 10,
+    marginTop: 2,
   },
-  usernameText: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 22,
-  },
-  syncBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  syncText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 13,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
-  infoText: { gap: 2 },
-  infoLabel: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-  },
-  infoValue: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 13,
-  },
-  inputGroup: {
-    gap: 6,
-  },
-  inputLabel: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    paddingHorizontal: 4,
-  },
+  panelBtnText: { fontFamily: "Cairo_700Bold", fontSize: 15, color: "#FFF" },
+
+  // Input
+  inputGroup: { gap: 6 },
+  inputLabel: { fontFamily: "Cairo_600SemiBold", fontSize: 14, paddingHorizontal: 2 },
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  input: {
-    flex: 1,
-    fontFamily: "Cairo_400Regular",
-    fontSize: 15,
-    padding: 0,
-  },
-  errorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 4,
-  },
-  errorText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 13,
-    color: "#EF4444",
-    flex: 1,
-  },
-  submitBtn: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 14,
-    borderRadius: 12,
-    marginTop: 4,
-  },
-  submitBtnText: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 16,
-    color: "#FFF",
-  },
-  switchRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 20,
-  },
-  switchText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 14,
-  },
-  switchLink: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 14,
-  },
-  skipSection: {
-    alignItems: "center",
-    paddingBottom: 40,
-  },
-  skipBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-  },
-  skipText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    marginTop: 24,
-  },
-  logoutBtnText: {
-    fontFamily: "Cairo_700Bold",
-    fontSize: 16,
-    color: "#EF4444",
-  },
-  deleteSection: {
-    marginTop: 32,
-    alignItems: "center",
-    gap: 10,
-    paddingBottom: 8,
-  },
-  deleteDivider: {
-    width: "100%",
-    height: 1,
-    backgroundColor: "rgba(158,0,0,0.12)",
-    marginBottom: 4,
-  },
-  deleteWarningText: {
-    fontFamily: "Cairo_400Regular",
-    fontSize: 12,
-    textAlign: "center",
-    paddingHorizontal: 8,
-  },
-  deleteBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 7,
-    paddingVertical: 11,
-    paddingHorizontal: 20,
     borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+  },
+  input: { flex: 1, fontFamily: "Cairo_400Regular", fontSize: 15, padding: 0 },
+
+  // Feedback
+  errorRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 2 },
+  errorText: { fontFamily: "Cairo_400Regular", fontSize: 13, color: "#EF4444", flex: 1 },
+  successRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  successText: { fontFamily: "Cairo_400Regular", fontSize: 13, color: "#43A047" },
+
+  // Action row (logout / delete)
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    gap: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "rgba(158,0,0,0.35)",
-    backgroundColor: "rgba(158,0,0,0.06)",
   },
-  deleteBtnText: {
-    fontFamily: "Cairo_600SemiBold",
-    fontSize: 14,
-    color: "#9E0000",
-  },
+  dangerSubtext: { fontFamily: "Cairo_400Regular", fontSize: 12, marginTop: 2 },
+
+  // Auth form
+  submitBtn: { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 12, marginTop: 4 },
+  submitBtnText: { fontFamily: "Cairo_700Bold", fontSize: 16, color: "#FFF" },
+  switchRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 20 },
+  switchText: { fontFamily: "Cairo_400Regular", fontSize: 14 },
+  switchLink: { fontFamily: "Cairo_700Bold", fontSize: 14 },
+  skipSection: { alignItems: "center", paddingBottom: 40 },
+  skipBtn: { paddingVertical: 10, paddingHorizontal: 20 },
+  skipText: { fontFamily: "Cairo_400Regular", fontSize: 14, textDecorationLine: "underline" },
 });

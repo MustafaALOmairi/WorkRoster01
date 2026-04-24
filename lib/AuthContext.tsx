@@ -14,6 +14,7 @@ interface AuthContextValue {
   login: (usernameOrEmail: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   register: (username: string, password: string, email?: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => Promise<void>;
+  updateUsername: (newUsername: string) => void;
   syncToServer: (data: { shiftConfig?: any; notes?: any; themePrefs?: any; aiThemes?: any }) => Promise<void>;
   loadFromServer: () => Promise<{ shiftConfig: any; notes: any; themePrefs: any; aiThemes: any } | null>;
 }
@@ -87,6 +88,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
   }, []);
 
+  const updateUsername = useCallback((newUsername: string) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, username: newUsername };
+      AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
   const syncToServer = useCallback(async (data: { shiftConfig?: any; notes?: any; themePrefs?: any; aiThemes?: any }) => {
     if (!user) return;
     try {
@@ -112,9 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     register,
     logout,
+    updateUsername,
     syncToServer,
     loadFromServer,
-  }), [user, isLoading, login, register, logout, syncToServer, loadFromServer]);
+  }), [user, isLoading, login, register, logout, updateUsername, syncToServer, loadFromServer]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
