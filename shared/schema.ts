@@ -10,8 +10,6 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email"),
   password: text("password"),
-  googleId: text("google_id").unique(),
-  appleId: text("apple_id").unique(),
 });
 
 export const userData = pgTable("user_data", {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   StyleSheet,
   Text,
@@ -16,24 +16,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import * as WebBrowser from "expo-web-browser";
-import * as Google from "expo-auth-session/providers/google";
-import { makeRedirectUri } from "expo-auth-session";
 import { useColors } from "@/lib/useColors";
 import { useAppTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 import { useSound } from "@/lib/SoundContext";
 import { loadServerData, useDataReload } from "@/lib/DataSync";
 import { getApiUrl } from "@/lib/query-client";
-
-// Required for OAuth redirect handling on web
-WebBrowser.maybeCompleteAuthSession();
-
-// ─── Google OAuth helper ──────────────────────────────────────────────────────
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-const GOOGLE_ENABLED = !!GOOGLE_WEB_CLIENT_ID;
 
 // ─── Logged-in: Account Management ───────────────────────────────────────────
 function LoggedInView() {
@@ -302,194 +290,12 @@ function LoggedInView() {
   );
 }
 
-// ─── OAuth Login Buttons ──────────────────────────────────────────────────────
-function OAuthButtons({ onSuccess, onError }: { onSuccess: (data: any) => void; onError: (msg: string) => void }) {
-  const colors = useColors();
-  const { t, isDark } = useAppTheme();
-  const { playSound } = useSound();
-  const cardBg = isDark ? "#161B22" : "#FFF";
-  const borderColor = isDark ? "#30363D" : "#E5E7EB";
-
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [appleLoading, setAppleLoading] = useState(false);
-
-  // Google OAuth
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: GOOGLE_WEB_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    androidClientId: GOOGLE_ANDROID_CLIENT_ID,
-  });
-
-  useEffect(() => {
-    if (response?.type === "success") {
-      const { accessToken } = response.authentication!;
-      handleGoogleToken(accessToken);
-    } else if (response?.type === "error") {
-      setGoogleLoading(false);
-      onError(t("فشل تسجيل الدخول بـ Google", "Google sign-in failed"));
-    } else if (response?.type === "dismiss" || response?.type === "cancel") {
-      setGoogleLoading(false);
-    }
-  }, [response]);
-
-  const handleGoogleToken = async (accessToken: string) => {
-    try {
-      const url = new URL("/api/auth/oauth/google", getApiUrl());
-      const res = await fetch(url.toString(), {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accessToken }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        playSound("success"); onSuccess(data);
-      } else {
-        onError(t("فشل تسجيل الدخول بـ Google", "Google sign-in failed"));
-      }
-    } catch {
-      onError(t("تعذر الاتصال بالخادم", "Could not connect to server"));
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleGooglePress = async () => {
-    if (!GOOGLE_ENABLED) {
-      onError(t("تسجيل الدخول بـ Google غير مهيأ", "Google sign-in is not configured"));
-      return;
-    }
-    setGoogleLoading(true);
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await promptAsync();
-  };
-
-  const handleApplePress = async () => {
-    if (Platform.OS !== "ios") return;
-    setAppleLoading(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const AppleAuth = await import("expo-apple-authentication");
-      const credential = await AppleAuth.signInAsync({
-        requestedScopes: [
-          AppleAuth.AppleAuthenticationScope.FULL_NAME,
-          AppleAuth.AppleAuthenticationScope.EMAIL,
-        ],
-      });
-      const url = new URL("/api/auth/oauth/apple", getApiUrl());
-      const res = await fetch(url.toString(), {
-        method: "POST", credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          identityToken: credential.identityToken,
-          fullName: credential.fullName,
-          email: credential.email,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        playSound("success"); onSuccess(data);
-      } else {
-        onError(t("فشل تسجيل الدخول بـ Apple", "Apple sign-in failed"));
-      }
-    } catch (err: any) {
-      if (err?.code !== "ERR_REQUEST_CANCELED") {
-        onError(t("فشل تسجيل الدخول بـ Apple", "Apple sign-in failed"));
-      }
-    } finally {
-      setAppleLoading(false);
-    }
-  };
-
-  const showGoogle = GOOGLE_ENABLED;
-  const showApple = Platform.OS === "ios";
-  if (!showGoogle && !showApple) return null;
-
-  return (
-    <View style={oauthStyles.container}>
-      {/* Divider */}
-      <View style={oauthStyles.dividerRow}>
-        <View style={[oauthStyles.dividerLine, { backgroundColor: borderColor }]} />
-        <Text style={[oauthStyles.dividerText, { color: colors.textSecondary }]}>{t("أو", "or")}</Text>
-        <View style={[oauthStyles.dividerLine, { backgroundColor: borderColor }]} />
-      </View>
-
-      {/* Google */}
-      {showGoogle && (
-        <Pressable
-          onPress={handleGooglePress}
-          disabled={googleLoading || !request}
-          style={[oauthStyles.btn, { backgroundColor: cardBg, borderColor, opacity: googleLoading ? 0.7 : 1 }]}
-          testID="google-signin-btn"
-        >
-          {googleLoading ? (
-            <ActivityIndicator color="#4285F4" size="small" />
-          ) : (
-            <View style={oauthStyles.btnContent}>
-              <GoogleLogo />
-              <Text style={[oauthStyles.btnText, { color: isDark ? "#FFF" : "#1F2937" }]}>
-                {t("متابعة بـ Google", "Continue with Google")}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      )}
-
-      {/* Apple — iOS only */}
-      {showApple && (
-        <Pressable
-          onPress={handleApplePress}
-          disabled={appleLoading}
-          style={[oauthStyles.btn, { backgroundColor: isDark ? "#FFF" : "#000", borderColor: isDark ? "#FFF" : "#000", opacity: appleLoading ? 0.7 : 1 }]}
-          testID="apple-signin-btn"
-        >
-          {appleLoading ? (
-            <ActivityIndicator color={isDark ? "#000" : "#FFF"} size="small" />
-          ) : (
-            <View style={oauthStyles.btnContent}>
-              <Ionicons name="logo-apple" size={20} color={isDark ? "#000" : "#FFF"} />
-              <Text style={[oauthStyles.btnText, { color: isDark ? "#000" : "#FFF" }]}>
-                {t("متابعة بـ Apple", "Continue with Apple")}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      )}
-    </View>
-  );
-}
-
-function GoogleLogo() {
-  return (
-    <View style={{ width: 20, height: 20, alignItems: "center", justifyContent: "center" }}>
-      <Text style={{ fontSize: 16, fontWeight: "700", color: "#4285F4" }}>G</Text>
-    </View>
-  );
-}
-
-const oauthStyles = StyleSheet.create({
-  container: { gap: 10, marginTop: 4 },
-  dividerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontFamily: "Cairo_400Regular", fontSize: 13 },
-  btn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderWidth: 1,
-    minHeight: 48,
-  },
-  btnContent: { flexDirection: "row", alignItems: "center", gap: 10 },
-  btnText: { fontFamily: "Cairo_600SemiBold", fontSize: 15 },
-});
-
 // ─── Login / Register screen ──────────────────────────────────────────────────
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const { t, isDark } = useAppTheme();
-  const { user, login, register, refreshAuth } = useAuth();
+  const { user, login, register } = useAuth();
   const { playSound } = useSound();
   const { triggerReload } = useDataReload();
   const webTopInset = Platform.OS === "web" ? 67 : 0;
@@ -538,13 +344,6 @@ export default function AuthScreen() {
     }
   };
 
-  const handleOAuthSuccess = async (_data: { id: string; username: string; email?: string }) => {
-    await refreshAuth();
-    const loaded = await loadServerData();
-    if (loaded) triggerReload();
-    router.back();
-  };
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: bgColor }}
@@ -570,7 +369,6 @@ export default function AuthScreen() {
           </View>
 
           <View style={[styles.card, { backgroundColor: cardBg, borderColor: colors.border, padding: 16, gap: 12 }]}>
-            {/* Username */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
                 {isLogin ? t("اسم المستخدم أو البريد الإلكتروني", "Username or Email") : t("اسم المستخدم", "Username")}
@@ -587,7 +385,6 @@ export default function AuthScreen() {
               </View>
             </View>
 
-            {/* Email (register only) */}
             {!isLogin && (
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("البريد الإلكتروني (اختياري)", "Email (optional)")}</Text>
@@ -598,7 +395,6 @@ export default function AuthScreen() {
               </View>
             )}
 
-            {/* Password */}
             <View style={styles.inputGroup}>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("كلمة المرور", "Password")}</Text>
               <View style={[styles.inputWrapper, { backgroundColor: inputBg, borderColor: colors.border }]}>
@@ -608,7 +404,6 @@ export default function AuthScreen() {
               </View>
             </View>
 
-            {/* Confirm password */}
             {!isLogin && (
               <View style={styles.inputGroup}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t("تأكيد كلمة المرور", "Confirm Password")}</Text>
@@ -629,12 +424,6 @@ export default function AuthScreen() {
             <Pressable onPress={handleSubmit} disabled={loading} style={[styles.submitBtn, { backgroundColor: colors.accent, opacity: loading ? 0.7 : 1 }]} testID="auth-submit">
               {loading ? <ActivityIndicator color="#FFF" size="small" /> : <Text style={styles.submitBtnText}>{isLogin ? t("دخول", "Sign In") : t("إنشاء حساب", "Create Account")}</Text>}
             </Pressable>
-
-            {/* OAuth buttons inside the card */}
-            <OAuthButtons
-              onSuccess={handleOAuthSuccess}
-              onError={(msg) => setError(msg)}
-            />
           </View>
 
           <Pressable onPress={() => { playSound("tap"); setIsLogin(!isLogin); setError(""); setEmail(""); setConfirmPassword(""); }} style={styles.switchRow}>
