@@ -45,16 +45,36 @@ function LoggedInView() {
   };
 
   const handleDeleteAccount = () => {
+    // Step 1: initial confirmation
     Alert.alert(
       t("حذف الحساب", "Delete Account"),
       t(
-        "هل أنت متأكد من حذف حسابك؟ سيتم حذف جميع بياناتك المحفوظة على السحابة بشكل نهائي.",
-        "Are you sure you want to delete your account? All your cloud data will be permanently deleted."
+        "هل أنت متأكد من أنك تريد حذف الحساب؟",
+        "Are you sure you want to delete your account?"
       ),
       [
         { text: t("إلغاء", "Cancel"), style: "cancel" },
         {
-          text: t("حذف نهائي", "Delete Permanently"),
+          text: t("نعم، تابع", "Yes, Continue"),
+          style: "destructive",
+          onPress: handleDeleteConfirmStep2,
+        },
+      ]
+    );
+  };
+
+  const handleDeleteConfirmStep2 = () => {
+    // Step 2: final irreversible confirmation
+    Alert.alert(
+      t("تأكيد نهائي", "Final Confirmation"),
+      t(
+        "سيتم حذف حسابك وجميع بياناتك المحفوظة على السحابة بشكل دائم ولا يمكن التراجع عن هذا الإجراء.",
+        "Your account and all cloud data will be permanently deleted. This action cannot be undone."
+      ),
+      [
+        { text: t("إلغاء", "Cancel"), style: "cancel" },
+        {
+          text: t("احذف الحساب", "Delete Account"),
           style: "destructive",
           onPress: confirmDeleteAccount,
         },
