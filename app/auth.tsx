@@ -129,29 +129,10 @@ function LoggedInView() {
   const handleDeleteAccount = () => {
     Alert.alert(
       t("حذف الحساب", "Delete Account"),
-      t("هل أنت متأكد من أنك تريد حذف الحساب؟", "Are you sure you want to delete your account?"),
+      t("هل أنت متأكد أنك تريد حذف الحساب؟ لا يمكن التراجع عن هذا الإجراء.", "Are you sure you want to delete your account? This cannot be undone."),
       [
-        { text: t("إلغاء", "Cancel"), style: "cancel" },
-        {
-          text: t("نعم، تابع", "Yes, Continue"),
-          style: "destructive",
-          onPress: () => setTimeout(handleDeleteStep2, 400),
-        },
-      ]
-    );
-  };
-
-  const handleDeleteStep2 = () => {
-    Alert.alert(
-      t("تأكيد نهائي", "Final Confirmation"),
-      t("سيتم حذف حسابك وجميع بياناتك من السحابة بشكل دائم ولا يمكن التراجع عن هذا الإجراء.", "Your account and all cloud data will be permanently deleted. This cannot be undone."),
-      [
-        { text: t("إلغاء", "Cancel"), style: "cancel" },
-        {
-          text: t("احذف الحساب", "Delete Account"),
-          style: "destructive",
-          onPress: () => setTimeout(confirmDelete, 400),
-        },
+        { text: t("لا", "No"), style: "cancel" },
+        { text: t("نعم", "Yes"), style: "destructive", onPress: confirmDelete },
       ]
     );
   };
