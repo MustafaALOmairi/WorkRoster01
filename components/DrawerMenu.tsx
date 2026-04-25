@@ -33,7 +33,6 @@ const menuItems = [
   { route: "/customize", icon: "color-palette-outline" as const, labelAr: "تخصيص", labelEn: "Customize" },
   { route: "/theme-store", icon: "storefront-outline" as const, labelAr: "متجر الثيمات", labelEn: "Theme Store" },
   { route: "/settings", icon: "settings-outline" as const, labelAr: "الإعدادات", labelEn: "Settings" },
-  { route: "/auth", icon: "person-outline" as const, labelAr: "الحساب", labelEn: "Account" },
   { route: "/about", icon: "information-circle-outline" as const, labelAr: "حول", labelEn: "About" },
 ];
 
