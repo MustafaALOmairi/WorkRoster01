@@ -54,6 +54,7 @@ function LoggedInView() {
 
   const [loggingOut, setLoggingOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const togglePanel = (p: "username" | "password") => {
     setPanel((prev) => (prev === p ? "none" : p));
@@ -126,19 +127,9 @@ function LoggedInView() {
     router.back();
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      t("حذف الحساب", "Delete Account"),
-      t("هل أنت متأكد أنك تريد حذف الحساب؟ لا يمكن التراجع عن هذا الإجراء.", "Are you sure you want to delete your account? This cannot be undone."),
-      [
-        { text: t("لا", "No"), style: "cancel" },
-        { text: t("نعم", "Yes"), style: "destructive", onPress: confirmDelete },
-      ]
-    );
-  };
-
   const confirmDelete = async () => {
     setDeletingAccount(true);
+    setShowDeleteConfirm(false);
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       const url = new URL("/api/auth/delete-account", getApiUrl());
@@ -268,15 +259,50 @@ function LoggedInView() {
         </Pressable>
 
         <Text style={[styles.sectionLabel, { color: "#EF4444", marginTop: 28 }]}>{t("المنطقة الخطرة", "Danger Zone")}</Text>
-        <Pressable onPress={handleDeleteAccount} disabled={deletingAccount || loggingOut} style={[styles.actionRow, { backgroundColor: cardBg, borderColor: "#9E000040", borderWidth: 1 }]} testID="delete-account-btn">
-          <View style={[styles.menuIcon, { backgroundColor: "#9E000018" }]}>
-            {deletingAccount ? <ActivityIndicator color="#9E0000" size="small" /> : <Ionicons name="trash-outline" size={20} color="#9E0000" />}
+
+        {showDeleteConfirm ? (
+          <View style={[styles.confirmCard, { backgroundColor: "#9E000012", borderColor: "#9E000060" }]}>
+            <Ionicons name="warning-outline" size={22} color="#9E0000" style={{ marginBottom: 6 }} />
+            <Text style={[styles.confirmText, { color: "#9E0000" }]}>
+              {t("هل أنت متأكد أنك تريد حذف الحساب؟", "Are you sure you want to delete your account?")}
+            </Text>
+            <Text style={[styles.confirmSub, { color: "#9E000099" }]}>
+              {t("لا يمكن التراجع عن هذا الإجراء", "This action cannot be undone")}
+            </Text>
+            <View style={styles.confirmBtns}>
+              <Pressable
+                onPress={() => setShowDeleteConfirm(false)}
+                style={[styles.confirmBtn, { backgroundColor: cardBg, borderColor }]}
+              >
+                <Text style={[styles.confirmBtnText, { color: colors.text }]}>{t("لا", "No")}</Text>
+              </Pressable>
+              <Pressable
+                onPress={confirmDelete}
+                style={[styles.confirmBtn, { backgroundColor: "#9E0000" }]}
+              >
+                {deletingAccount
+                  ? <ActivityIndicator color="#FFF" size="small" />
+                  : <Text style={[styles.confirmBtnText, { color: "#FFF" }]}>{t("نعم، احذف", "Yes, Delete")}</Text>
+                }
+              </Pressable>
+            </View>
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.menuLabel, { color: "#9E0000" }]}>{t("حذف الحساب", "Delete Account")}</Text>
-            <Text style={[styles.dangerSubtext, { color: "#9E000099" }]}>{t("يحذف جميع البيانات نهائياً", "Permanently deletes all data")}</Text>
-          </View>
-        </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => setShowDeleteConfirm(true)}
+            disabled={deletingAccount || loggingOut}
+            style={[styles.actionRow, { backgroundColor: cardBg, borderColor: "#9E000040", borderWidth: 1 }]}
+            testID="delete-account-btn"
+          >
+            <View style={[styles.menuIcon, { backgroundColor: "#9E000018" }]}>
+              {deletingAccount ? <ActivityIndicator color="#9E0000" size="small" /> : <Ionicons name="trash-outline" size={20} color="#9E0000" />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.menuLabel, { color: "#9E0000" }]}>{t("حذف الحساب", "Delete Account")}</Text>
+              <Text style={[styles.dangerSubtext, { color: "#9E000099" }]}>{t("يحذف جميع البيانات نهائياً", "Permanently deletes all data")}</Text>
+            </View>
+          </Pressable>
+        )}
       </ScrollView>
     </View>
   );
@@ -469,6 +495,12 @@ const styles = StyleSheet.create({
   successText: { fontFamily: "Cairo_400Regular", fontSize: 13, color: "#43A047" },
   actionRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderRadius: 14, borderWidth: 1 },
   dangerSubtext: { fontFamily: "Cairo_400Regular", fontSize: 12, marginTop: 2 },
+  confirmCard: { borderRadius: 14, borderWidth: 1, padding: 16, alignItems: "center", gap: 4 },
+  confirmText: { fontFamily: "Cairo_700Bold", fontSize: 15, textAlign: "center" },
+  confirmSub: { fontFamily: "Cairo_400Regular", fontSize: 13, textAlign: "center", marginBottom: 8 },
+  confirmBtns: { flexDirection: "row", gap: 10, marginTop: 4, width: "100%" },
+  confirmBtn: { flex: 1, alignItems: "center", justifyContent: "center", paddingVertical: 12, borderRadius: 10, borderWidth: 1 },
+  confirmBtnText: { fontFamily: "Cairo_700Bold", fontSize: 15 },
   submitBtn: { alignItems: "center", justifyContent: "center", paddingVertical: 14, borderRadius: 12 },
   submitBtnText: { fontFamily: "Cairo_700Bold", fontSize: 16, color: "#FFF" },
   switchRow: { flexDirection: "row", justifyContent: "center", alignItems: "center", paddingVertical: 20 },
