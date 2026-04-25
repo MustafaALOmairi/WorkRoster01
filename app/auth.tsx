@@ -132,7 +132,11 @@ function LoggedInView() {
       t("هل أنت متأكد من أنك تريد حذف الحساب؟", "Are you sure you want to delete your account?"),
       [
         { text: t("إلغاء", "Cancel"), style: "cancel" },
-        { text: t("نعم، تابع", "Yes, Continue"), style: "destructive", onPress: handleDeleteStep2 },
+        {
+          text: t("نعم، تابع", "Yes, Continue"),
+          style: "destructive",
+          onPress: () => setTimeout(handleDeleteStep2, 400),
+        },
       ]
     );
   };
@@ -143,7 +147,11 @@ function LoggedInView() {
       t("سيتم حذف حسابك وجميع بياناتك من السحابة بشكل دائم ولا يمكن التراجع عن هذا الإجراء.", "Your account and all cloud data will be permanently deleted. This cannot be undone."),
       [
         { text: t("إلغاء", "Cancel"), style: "cancel" },
-        { text: t("احذف الحساب", "Delete Account"), style: "destructive", onPress: confirmDelete },
+        {
+          text: t("احذف الحساب", "Delete Account"),
+          style: "destructive",
+          onPress: () => setTimeout(confirmDelete, 400),
+        },
       ]
     );
   };
@@ -155,7 +163,10 @@ function LoggedInView() {
       const url = new URL("/api/auth/delete-account", getApiUrl());
       const res = await fetch(url.toString(), { method: "DELETE", credentials: "include" });
       if (res.ok) {
-        await AsyncStorage.clear(); await logout(); playSound("navigate"); router.replace("/");
+        await logout();
+        await AsyncStorage.clear();
+        playSound("navigate");
+        router.back();
       } else {
         Alert.alert(t("خطأ", "Error"), t("فشل حذف الحساب، حاول مرة أخرى", "Failed to delete account, try again"));
       }
