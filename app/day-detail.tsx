@@ -7,7 +7,6 @@ import {
   TextInput,
   Platform,
   Switch,
-  KeyboardAvoidingView,
   ScrollView,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
@@ -114,11 +113,7 @@ export default function DayDetailSheet() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: colors.surface }]}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      keyboardVerticalOffset={90}
-    >
+    <View style={[styles.container, { backgroundColor: colors.surface }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -258,7 +253,7 @@ export default function DayDetailSheet() {
           <Text style={styles.saveBtnText}>{t("حفظ", "Save")}</Text>
         </Pressable>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
