@@ -23,7 +23,7 @@ export const SHIFT_DEFINITIONS: Record<ShiftType, ShiftDefinition> = {
     label: "Morning",
     labelAr: "صباحي",
     shortLabel: "Day",
-    shortLabelAr: "نهار",
+    shortLabelAr: "صباح",
     startTime: "06:00",
     endTime: "14:00",
   },
@@ -135,7 +135,7 @@ export const MONTH_SHORT_EN = [
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-export const DAY_NAMES_AR = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"];
+export const DAY_NAMES_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 export const DAY_NAMES_EN = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 export const DAY_FULL_AR = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];

@@ -293,7 +293,12 @@ export default function CalendarScreen() {
           if (language === "ar" && i === 5) dayColor = weekendFridayColor || dayColor;
           return (
             <View key={name} style={styles.weekDayCell}>
-              <Text style={[styles.weekDayText, { color: dayColor }]}>{name}</Text>
+              <Text
+                style={[styles.weekDayText, { color: dayColor }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.5}
+              >{name}</Text>
             </View>
           );
         })}
@@ -550,8 +555,8 @@ const styles = StyleSheet.create({
   weekDayCell: { flex: 1, alignItems: "center" },
   weekDayText: {
     fontFamily: "Cairo_700Bold",
-    fontSize: 11,
-    letterSpacing: 0.5,
+    fontSize: 10,
+    letterSpacing: 0,
   },
   calendarWithBg: {
     flex: 1,
