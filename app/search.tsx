@@ -108,6 +108,8 @@ export default function SearchScreen() {
   const [fromDate, setFromDate] = useState(formatDate(new Date()));
   const [toDate, setToDate] = useState(formatDate(new Date()));
   const [dateInputText, setDateInputText] = useState("");
+  const [fromInputText, setFromInputText] = useState("");
+  const [toInputText, setToInputText] = useState("");
 
   const monthNames = language === "ar" ? MONTH_NAMES_AR : MONTH_NAMES_EN;
   const dayFullNames = language === "ar" ? DAY_FULL_AR : DAY_FULL_EN;
@@ -130,6 +132,24 @@ export default function SearchScreen() {
     if (parsed) {
       setSingleDate(parsed);
       setDateInputText("");
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleFromInputSubmit = () => {
+    const parsed = tryParseUserDate(fromInputText);
+    if (parsed) {
+      setFromDate(parsed);
+      setFromInputText("");
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+  };
+
+  const handleToInputSubmit = () => {
+    const parsed = tryParseUserDate(toInputText);
+    if (parsed) {
+      setToDate(parsed);
+      setToInputText("");
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -278,6 +298,17 @@ export default function SearchScreen() {
               <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
             </Pressable>
           </View>
+          <TextInput
+            style={[styles.dateTextInput, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={fromInputText}
+            onChangeText={setFromInputText}
+            placeholder={t("اكتب تاريخ مثل 15/2/2026", "Type date e.g. 15/2/2026")}
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            returnKeyType="go"
+            onSubmitEditing={handleFromInputSubmit}
+            textAlign="center"
+          />
           <View style={[styles.rangeSeparator, { borderTopColor: colors.border }]} />
           <Text style={[styles.datePickerLabel, { color: colors.textSecondary }]}>
             {t("إلى", "To")}
@@ -293,6 +324,17 @@ export default function SearchScreen() {
               <Ionicons name="add-circle-outline" size={28} color={colors.accent} />
             </Pressable>
           </View>
+          <TextInput
+            style={[styles.dateTextInput, { color: colors.text, backgroundColor: colors.surfaceTertiary, borderColor: colors.border }]}
+            value={toInputText}
+            onChangeText={setToInputText}
+            placeholder={t("اكتب تاريخ مثل 15/2/2026", "Type date e.g. 15/2/2026")}
+            placeholderTextColor={colors.textSecondary}
+            keyboardType="numbers-and-punctuation"
+            returnKeyType="go"
+            onSubmitEditing={handleToInputSubmit}
+            textAlign="center"
+          />
         </View>
       )}
 
@@ -372,8 +414,9 @@ export default function SearchScreen() {
               renderItem={({ item }) => (
                 <Pressable
                   onPress={() => {
-                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push({ pathname: "/day-detail", params: { date: item.startDate } });
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    playSound("navigate");
+                    router.navigate({ pathname: "/", params: { date: item.startDate } });
                   }}
                   style={({ pressed }) => [
                     styles.holidayRow,

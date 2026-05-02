@@ -754,6 +754,51 @@ export default function CustomizeScreen() {
             colors={colors}
             language={language}
           />
+          <View style={[styles.startDateDivider, { borderTopColor: colors.border }]} />
+          <DateInputPicker
+            value={config.startDate}
+            onChange={(d) => updateConfig({ startDate: d })}
+            colors={colors}
+            language={language}
+          />
+        </View>
+
+        <SectionHeader title={t("تخصيص سريع", "Quick Setup")} colors={colors} />
+        <View style={[styles.card, { backgroundColor: colors.surfaceSecondary, padding: 12, gap: 10 }]}>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              playSound("toggle");
+              const pattern: ShiftType[] = [
+                ...Array(14).fill("morning") as ShiftType[],
+                ...Array(14).fill("rest") as ShiftType[],
+              ];
+              updateConfig({ pattern, patternId: "custom" });
+            }}
+            style={[styles.quickPresetBtn, { borderColor: colors.accent }]}
+          >
+            <Ionicons name="flash" size={18} color={colors.accent} />
+            <Text style={[styles.quickPresetText, { color: colors.text }]}>
+              {t("أسبوعين عمل + أسبوعين راحة", "2 Weeks Work + 2 Weeks Rest")}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              playSound("toggle");
+              const pattern: ShiftType[] = [
+                ...Array(14).fill("morning") as ShiftType[],
+                ...Array(7).fill("rest") as ShiftType[],
+              ];
+              updateConfig({ pattern, patternId: "custom" });
+            }}
+            style={[styles.quickPresetBtn, { borderColor: colors.accent }]}
+          >
+            <Ionicons name="flash" size={18} color={colors.accent} />
+            <Text style={[styles.quickPresetText, { color: colors.text }]}>
+              {t("أسبوعين عمل + أسبوع راحة", "2 Weeks Work + 1 Week Rest")}
+            </Text>
+          </Pressable>
         </View>
 
         <SectionHeader title={t("نظام الدوام", "Rotation System")} colors={colors} />
@@ -1131,6 +1176,24 @@ const styles = StyleSheet.create({
   addHolidayBtnText: {
     fontFamily: "Cairo_600SemiBold",
     fontSize: 13,
+  },
+  startDateDivider: {
+    borderTopWidth: 1,
+    marginHorizontal: 12,
+  },
+  quickPresetBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  quickPresetText: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 14,
+    flex: 1,
   },
   shareBtn: {
     flexDirection: "row",
