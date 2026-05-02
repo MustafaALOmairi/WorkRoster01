@@ -53,11 +53,12 @@ interface CalendarDayCellProps {
   showIconInCell?: boolean;
   selBg?: string;
   selBorder?: string;
+  fontScale?: number;
 }
 
 function CalendarDayCell({
   day, shiftType, isToday, isSelected, dayOfWeek, colors, hasNote, isHoliday, lang, onSelect,
-  cellRadius, cellIcon, showIconInCell, selBg, selBorder,
+  cellRadius, cellIcon, showIconInCell, selBg, selBorder, fontScale = 1,
 }: CalendarDayCellProps) {
   const def = SHIFT_DEFINITIONS[shiftType];
   const shiftColor = colors.shifts[shiftType];
@@ -108,7 +109,7 @@ function CalendarDayCell({
           {lang === "ar" ? def.shortLabelAr : def.shortLabel}
         </Text>
       )}
-      <Text style={[styles.dayNumber, { color: numberColor }]}>
+      <Text style={[styles.dayNumber, { color: numberColor, fontSize: 14 * fontScale }]}>
         {day}
       </Text>
       {(hasNote || isHoliday) && (
@@ -124,7 +125,7 @@ function CalendarDayCell({
 export default function CalendarScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { language, t, isDark, activeStoreTheme, setLanguage } = useAppTheme();
+  const { language, t, isDark, activeStoreTheme, setLanguage, calendarFontScaleValue } = useAppTheme();
   const { config, isLoaded } = useShiftConfig();
   const { notes } = useNotes();
   const { playSound } = useSound();
@@ -333,6 +334,7 @@ export default function CalendarScreen() {
                   showIconInCell={activeStoreTheme?.showIconInCell}
                   selBg={activeStoreTheme?.selectionBg}
                   selBorder={activeStoreTheme?.selectionBorder}
+                  fontScale={calendarFontScaleValue}
                 />
               );
             })}

@@ -273,6 +273,15 @@ export const AVAILABLE_COLORS = [
   "#F06292", "#7E57C2", "#29B6F6", "#66BB6A",
 ];
 
+export type CalendarFontScale = "small" | "medium" | "large" | "xlarge";
+
+export const CALENDAR_FONT_SCALE_VALUES: Record<CalendarFontScale, number> = {
+  small: 0.85,
+  medium: 1,
+  large: 1.2,
+  xlarge: 1.45,
+};
+
 interface AppPrefs {
   theme: ThemeMode;
   language: Language;
@@ -280,6 +289,7 @@ interface AppPrefs {
   colorPresetIndex: number;
   storeThemeId: string | null;
   accent: string;
+  calendarFontScale: CalendarFontScale;
 }
 
 interface ThemeContextValue {
@@ -292,6 +302,8 @@ interface ThemeContextValue {
   accent: string;
   aiGeneratedThemes: StoreTheme[];
   activeStoreTheme: StoreTheme | null;
+  calendarFontScale: CalendarFontScale;
+  calendarFontScaleValue: number;
   setTheme: (t: ThemeMode) => void;
   setLanguage: (l: Language) => void;
   setColorPreset: (index: number) => void;
@@ -299,6 +311,7 @@ interface ThemeContextValue {
   applyStoreTheme: (themeId: string | null) => void;
   addAiTheme: (theme: StoreTheme) => void;
   removeAiTheme: (themeId: string) => void;
+  setCalendarFontScale: (scale: CalendarFontScale) => void;
   t: (ar: string, en: string) => string;
   isLoaded: boolean;
   isDark: boolean;
@@ -311,6 +324,7 @@ const DEFAULT_PREFS: AppPrefs = {
   colorPresetIndex: 0,
   storeThemeId: null,
   accent: "#F5A623",
+  calendarFontScale: "medium",
 };
 
 const STORAGE_KEY = "@shift_calendar_prefs";
@@ -423,6 +437,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           return next;
         });
       },
+      setCalendarFontScale: (scale) => updatePrefs({ calendarFontScale: scale }),
+      calendarFontScale: prefs.calendarFontScale,
+      calendarFontScaleValue: CALENDAR_FONT_SCALE_VALUES[prefs.calendarFontScale] ?? 1,
       removeAiTheme: (themeId) => {
         setAiGeneratedThemes((prev) => {
           const next = prev.filter((t) => t.id !== themeId);

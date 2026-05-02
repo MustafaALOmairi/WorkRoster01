@@ -1,371 +1,308 @@
-# WorkRoster — دليل المستخدم / User Guide
+# WorkRoster — User Guide / دليل المستخدم
+
+> **English:** A complete guide to every feature in WorkRoster — the shift calendar app for rotating workers.
+> **العربية:** دليل شامل لكل ميزات تطبيق WorkRoster — تقويم الشفتات لعمال الورديات الدوّارة.
 
 ---
 
-## العربية
+## Table of Contents / المحتويات
+
+1. [Getting Started / البدء](#1-getting-started--البدء)
+2. [The Calendar / التقويم](#2-the-calendar--التقويم)
+3. [Day Details / تفاصيل اليوم](#3-day-details--تفاصيل-اليوم)
+4. [Customize / التخصيص](#4-customize--التخصيص)
+5. [Search / البحث](#5-search--البحث)
+6. [Theme Store / متجر الثيمات](#6-theme-store--متجر-الثيمات)
+7. [Settings / الإعدادات](#7-settings--الإعدادات)
+8. [Account & Cloud Sync / الحساب والمزامنة](#8-account--cloud-sync--الحساب-والمزامنة)
+9. [Sharing Holidays / مشاركة الإجازات](#9-sharing-holidays--مشاركة-الإجازات)
 
 ---
 
-### مقدمة
+## 1. Getting Started / البدء
 
-WorkRoster تطبيق جدول مناوبات مخصص لعمال الورديات. يساعدك على متابعة جدولك الدوري، إضافة ملاحظات، تصدير الجدول بصيغة PDF، ومشاركة أيام الإجازات مع زملائك.
+### English
+When you first open WorkRoster you land on the **calendar screen** showing the current month. The app works fully offline — no account is required.
 
----
+- **Top-right of the header:** language toggle (Arabic ⇄ English).
+- **Top-left of the header:** menu icon (☰) — opens the side drawer with all sections.
+- **Side drawer items:** Search, Customize, Theme Store, Settings, Account, About.
 
-### 1. البدء — الشاشة الرئيسية
+### العربية
+عند فتح التطبيق لأول مرة تظهر **شاشة التقويم** للشهر الحالي. التطبيق يعمل بالكامل دون إنترنت ولا يحتاج إلى حساب.
 
-عند فتح التطبيق تظهر شاشة التقويم الرئيسية مباشرةً.
-
-- **التنقل بين الأشهر**: استخدم السهمين `<` و `>` بجانب اسم الشهر للانتقال بين الأشهر.
-- **اليوم الحالي**: محاط بإطار ملون تلقائياً.
-- **ألوان المناوبات**:
-  - **صباحي** — اللون الأول (قابل للتخصيص)
-  - **مسائي** — اللون الثاني
-  - **ليلي** — اللون الثالث
-  - **إجازة** — اللون الرابع
-- **القائمة الجانبية**: اضغط على أيقونة `☰` في أعلى اليسار لفتح قائمة التنقل.
-- **تغيير اللغة**: زر `ع/EN` في أعلى اليمين للتبديل بين العربية والإنجليزية.
+- **أعلى يمين الشريط:** زر تبديل اللغة (عربي ⇄ إنجليزي).
+- **أعلى يسار الشريط:** أيقونة القائمة (☰) — تفتح القائمة الجانبية بكل الأقسام.
+- **عناصر القائمة الجانبية:** البحث، التخصيص، متجر الثيمات، الإعدادات، الحساب، عن التطبيق.
 
 ---
 
-### 2. تفاصيل اليوم
+## 2. The Calendar / التقويم
 
-اضغط على أي يوم في التقويم لفتح نافذة تفاصيل اليوم.
+### English
+The calendar shows each day color-coded by shift type:
+- **Morning** (صباح)
+- **Evening** (مساء)
+- **Night** (ليلي)
+- **Rest** (راحة)
 
-**ما تراه في تفاصيل اليوم:**
-- نوع المناوبة (صباحي / مسائي / ليلي / إجازة)
-- وقت بداية ونهاية الوردية
-- أيقونة المناوبة
+**Actions:**
+1. **Change month** — tap the arrows on either side of the month name.
+2. **Jump to today** — tap the *Today* button in the header.
+3. **Select a day** — tap any day cell. A blue highlight appears and the **day-detail sheet** slides up.
+4. **Indicators on a day cell:**
+   - Coloured dot = a note exists for that day.
+   - Orange dot = the day is marked as a holiday.
 
-**إضافة ملاحظة:**
-1. اضغط على **"إضافة ملاحظة"**
-2. اكتب ملاحظتك في الحقل النصي
-3. تُحفظ الملاحظة تلقائياً
+### العربية
+يعرض التقويم كل يوم بلون مختلف حسب نوع الشفت:
+- **صباح**
+- **مساء**
+- **ليلي**
+- **راحة**
 
-**تعيين تذكير:**
-1. اضغط على **"تعيين تذكير"**
-2. سيتم إرسال إشعار لتذكيرك بهذا اليوم
-
----
-
-### 3. التخصيص
-
-من القائمة الجانبية اختر **"تخصيص"** لضبط جدول عملك.
-
-#### نمط الدوران
-اختر النمط الذي يناسب جدولك:
-- 4 صباحي / 4 إجازة
-- 3 صباحي / 3 مسائي / 3 ليلي / 3 إجازة
-- أنماط أخرى متعددة
-
-#### تاريخ البداية
-حدد التاريخ الذي يبدأ منه حساب دورة المناوبات.
-
-#### ساعات العمل
-اضبط أوقات بداية ونهاية كل نوع من المناوبات (صباحي / مسائي / ليلي).
-
-#### الإجازات الرسمية
-- اضغط **"إضافة إجازة"** لإضافة يوم إجازة رسمية
-- حدد التاريخ واكتب اسم المناسبة
-- الإجازات تظهر بشكل مميز في التقويم
-
-#### تصدير PDF
-1. اضغط **"تصدير PDF"**
-2. اختر الشهر أو الفترة الزمنية
-3. يمكنك مشاركة الملف أو حفظه
-
-#### مشاركة الإجازات
-1. اضغط **"مشاركة الإجازات"** لإنشاء كود مشاركة
-2. أعطِ الكود المكوّن من 6 أحرف لزملائك
-3. يمكنهم استيراد إجازاتك مباشرةً في تطبيقهم
+**العمليات:**
+1. **تغيير الشهر** — اضغط على الأسهم بجانب اسم الشهر.
+2. **العودة لليوم الحالي** — اضغط زر *اليوم* في الشريط العلوي.
+3. **اختيار يوم** — اضغط على أي خلية. يظهر إطار أزرق وتنزلق **شاشة تفاصيل اليوم** من الأسفل.
+4. **العلامات على الخلية:**
+   - نقطة ملونة = توجد ملاحظة في هذا اليوم.
+   - نقطة برتقالية = اليوم مُعلَّم كإجازة.
 
 ---
 
-### 4. البحث
+## 3. Day Details / تفاصيل اليوم
 
-من القائمة الجانبية اختر **"بحث"**.
+### English
+Tapping any day opens a sheet with:
+- **Shift type** for that day with its time range.
+- **Note field** — type any note (max length is generous; all text is saved automatically).
+- **Reminder toggle** — turn on to be notified for that day.
+- **Holiday toggle** — mark the day as a holiday (will show the orange dot on the calendar).
 
-#### البحث بنوع المناوبة
-1. اختر نوع الوردية (صباحي / مسائي / ليلي / إجازة)
-2. اضغط بحث لرؤية جميع أيام هذا النوع
+To close, swipe down or tap outside the sheet.
 
-#### البحث بتاريخ محدد
-1. اكتب التاريخ أو اختره من المنتقي
-2. يظهر نوع المناوبة لذلك اليوم فوراً
+### العربية
+الضغط على أي يوم يفتح شاشة تحتوي على:
+- **نوع الشفت** لهذا اليوم مع وقته.
+- **حقل الملاحظة** — اكتب أي ملاحظة (تُحفظ تلقائياً).
+- **زر التذكير** — فعّله لتصلك إشعارات عن هذا اليوم.
+- **زر الإجازة** — يجعل اليوم إجازة (وتظهر النقطة البرتقالية في التقويم).
 
-#### البحث بنطاق تاريخ
-1. حدد تاريخ البداية وتاريخ النهاية
-2. تظهر جميع المناوبات خلال تلك الفترة
-
----
-
-### 5. متجر الثيمات
-
-من القائمة الجانبية اختر **"متجر الثيمات"**.
-
-#### الثيمات الجاهزة
-- **أبيض بسيط** — مظهر نظيف وبسيط
-- **الحلم البنفسجي** — ألوان بنفسجية أنيقة
-- **الكلاسيكي الجريء** — ألوان حيوية وقوية
-- **الحلقة الكونية** — تخطيط تقويم دائري
-
-اضغط على أي ثيم لتطبيقه فوراً.
-
-#### ثيمات الذكاء الاصطناعي
-1. اضغط **"إنشاء ثيم بالذكاء الاصطناعي"**
-2. اكتب وصفاً مثل: "ثيم بحري هادئ بألوان زرقاء"
-3. انتظر بضع ثوانٍ ليُنشئ الذكاء الاصطناعي الثيم
-4. اضغط **"تطبيق"** لاستخدامه أو **"احفظ"** للرجوع إليه لاحقاً
-5. يمكن حفظ حتى 10 ثيمات
+للإغلاق: اسحب الشاشة لأسفل أو اضغط خارجها.
 
 ---
 
-### 6. الإعدادات
+## 4. Customize / التخصيص
 
-من القائمة الجانبية اختر **"الإعدادات"**.
+### English
+Open from the side drawer → **Customize**. Here you set up your rotation pattern and personal options.
 
-- **المظهر**: التبديل بين الوضع الفاتح والداكن
-- **اللغة**: تغيير لغة التطبيق (عربي / إنجليزي)
-- **الأصوات**: تشغيل أو إيقاف أصوات التطبيق
-- **الإشعارات**: إدارة التذكيرات
+**Sections:**
+1. **Start date** — the first day of your shift cycle. You can:
+   - Use the visual date picker, **or**
+   - Type the date directly in the day / month / year fields.
+2. **Quick Setup presets** — one-tap rotations such as *2 weeks work + 2 weeks rest* or *2 weeks work + 1 week rest*.
+3. **Rotation pattern** — choose from preset cycles or build a custom one (morning, evening, night, rest).
+4. **Work hours** — adjust the hours shown for each shift type.
+5. **Holidays** — add or remove fixed holidays.
+6. **PDF Export** — generate a printable PDF of your schedule and share it.
+7. **Holiday sharing** — see [section 9](#9-sharing-holidays--مشاركة-الإجازات).
 
----
+After any change, the calendar updates immediately.
 
-### 7. الحساب
+### العربية
+افتح من القائمة الجانبية → **التخصيص**. من هنا تضبط نمط الدوران وخياراتك الشخصية.
 
-من القائمة الجانبية اختر **"الحساب"**.
+**الأقسام:**
+1. **تاريخ البداية** — أول يوم في دورتك. تستطيع:
+   - استخدام منتقي التاريخ المرئي، **أو**
+   - كتابة التاريخ مباشرة في حقول اليوم / الشهر / السنة.
+2. **الإعداد السريع** — قوالب جاهزة بضغطة واحدة مثل *أسبوعين عمل + أسبوعين راحة* أو *أسبوعين عمل + أسبوع راحة*.
+3. **نمط الدوران** — اختر من القوالب الجاهزة أو ابنِ نمطاً مخصصاً (صباح، مساء، ليلي، راحة).
+4. **ساعات العمل** — اضبط ساعات كل شفت.
+5. **الإجازات** — أضف أو احذف إجازات ثابتة.
+6. **تصدير PDF** — أنشئ ملف PDF قابل للطباعة لجدولك وشاركه.
+7. **مشاركة الإجازات** — انظر [القسم 9](#9-sharing-holidays--مشاركة-الإجازات).
 
-#### إنشاء حساب جديد
-1. اضغط **"إنشاء حساب"**
-2. أدخل اسم المستخدم (3 أحرف على الأقل)
-3. أدخل كلمة مرور (6 أحرف على الأقل)
-4. البريد الإلكتروني اختياري
-5. اضغط **"تسجيل"**
-
-#### تسجيل الدخول
-1. أدخل اسم المستخدم **أو** البريد الإلكتروني
-2. أدخل كلمة المرور
-3. اضغط **"دخول"**
-
-#### المزامنة السحابية
-عند تسجيل الدخول، تُزامَن بياناتك تلقائياً مع الخادم. يمكنك استرداد بياناتك على أي جهاز آخر بتسجيل الدخول بنفس الحساب.
-
-#### تغيير اسم المستخدم
-1. اضغط على **"تغيير اسم المستخدم"**
-2. أدخل الاسم الجديد
-3. اضغط **"حفظ"**
-
-#### تغيير كلمة المرور
-1. اضغط على **"تغيير كلمة المرور"**
-2. أدخل كلمة المرور الحالية
-3. أدخل كلمة المرور الجديدة وأكدها
-4. اضغط **"تغيير"**
-
-#### تسجيل الخروج
-اضغط **"تسجيل الخروج"** — تبقى بياناتك المحلية على الجهاز.
-
-#### حذف الحساب
-> تحذير: هذا الإجراء لا يمكن التراجع عنه.
-
-1. اضغط **"حذف الحساب"**
-2. أكد في النافذة الأولى
-3. أكد مرة ثانية في التأكيد النهائي
-4. يُحذف حسابك وجميع بياناتك من الخادم نهائياً
+أي تعديل ينعكس على التقويم فوراً.
 
 ---
 
-### 8. استيراد إجازات من زميل
+## 5. Search / البحث
 
-1. احصل على كود المشاركة من زميلك (6 أحرف)
-2. افتح **"تخصيص"** من القائمة الجانبية
-3. اضغط **"استيراد إجازات"**
-4. أدخل الكود
-5. تُضاف الإجازات إلى تقويمك فوراً
+### English
+Open from the side drawer → **Search**. Three modes are available:
 
----
+1. **Search by date** — enter day / month / year to jump directly to that day.
+2. **Search by date range** — enter a *From* and *To* date (you can type the values in the input fields). The app lists every day in the range with its shift.
+3. **Search holidays** — see all upcoming holidays. Tap any holiday to jump to its date on the calendar.
 
----
+### العربية
+افتح من القائمة الجانبية → **البحث**. تتوفر ثلاثة أوضاع:
 
-## English
-
----
-
-### Introduction
-
-WorkRoster is a shift calendar app designed for shift workers. It helps you track your rotating schedule, add notes, export your schedule as a PDF, and share holidays with your coworkers.
+1. **بحث بتاريخ** — أدخل اليوم / الشهر / السنة للانتقال مباشرة لذلك اليوم.
+2. **بحث بنطاق تواريخ** — أدخل تاريخ *من* وتاريخ *إلى* (يمكن كتابة القيم في الحقول). يعرض التطبيق كل يوم في النطاق مع شفته.
+3. **بحث الإجازات** — يعرض كل الإجازات القادمة. اضغط أي إجازة لتقفز إلى تاريخها في التقويم.
 
 ---
 
-### 1. Getting Started — Home Screen
+## 6. Theme Store / متجر الثيمات
 
-When you open the app, the main calendar screen appears immediately.
+### English
+Open from the side drawer → **Theme Store**. WorkRoster ships with three premium themes:
 
-- **Navigate months**: Use the `<` and `>` arrows next to the month name.
-- **Today**: Automatically highlighted with a colored border.
-- **Shift colors**:
-  - **Morning** — First color (customizable)
-  - **Evening** — Second color
-  - **Night** — Third color
-  - **Rest** — Fourth color
-- **Side menu**: Tap the `☰` icon at the top-left to open the navigation drawer.
-- **Language toggle**: Tap the `ع/EN` button at the top-right to switch between Arabic and English.
+- **Minimalist White** — clean, light, distraction-free.
+- **Purple Dream** — bold purple accents.
+- **Bold Classic** — strong contrast, easy to read.
 
----
+You can also generate **AI themes**:
+1. Tap *Generate AI Theme*.
+2. Describe the look you want (e.g. "calm ocean blue").
+3. The AI builds a full color palette which is added to your library (up to 10 saved AI themes).
 
-### 2. Day Details
+Tap any theme to apply it immediately. Tap again to remove it and return to the default.
 
-Tap any day on the calendar to open the day details sheet.
+### العربية
+افتح من القائمة الجانبية → **متجر الثيمات**. يأتي التطبيق بثلاث ثيمات جاهزة:
 
-**What you see in day details:**
-- Shift type (Morning / Evening / Night / Rest)
-- Shift start and end times
-- Shift icon
+- **Minimalist White** — أبيض هادئ بسيط.
+- **Purple Dream** — لمسات بنفسجية جريئة.
+- **Bold Classic** — تباين قوي وقراءة سهلة.
 
-**Adding a note:**
-1. Tap **"Add Note"**
-2. Type your note in the text field
-3. The note saves automatically
+كذلك يمكن توليد **ثيمات بالذكاء الاصطناعي**:
+1. اضغط *توليد ثيم AI*.
+2. اوصف الشكل الذي تريد (مثلاً "أزرق المحيط الهادئ").
+3. يولّد الذكاء الاصطناعي لوحة ألوان كاملة وتُضاف لمكتبتك (حتى 10 ثيمات AI محفوظة).
 
-**Setting a reminder:**
-1. Tap **"Set Reminder"**
-2. You will receive a notification reminder for that day
+اضغط أي ثيم لتطبيقه فوراً. اضغطه مجدداً لإزالته والعودة للافتراضي.
 
 ---
 
-### 3. Customize
+## 7. Settings / الإعدادات
 
-From the side menu, select **"Customize"** to configure your work schedule.
+### English
+Open from the side drawer → **Settings**. Available options:
 
-#### Rotation Pattern
-Choose the pattern that matches your schedule:
-- 4 Morning / 4 Rest
-- 3 Morning / 3 Evening / 3 Night / 3 Rest
-- Several other patterns available
+1. **Theme mode** — Light / Dark.
+2. **Language** — Arabic / English.
+3. **Calendar number font size** — choose Small, Medium, Large, or X-Large for day numbers in the calendar grid.
+4. **Sounds** — enable or disable tap sound effects.
 
-#### Start Date
-Set the date from which the shift cycle calculation begins.
+All preferences are saved instantly to your device. If you are signed in, they are also synced to the cloud.
 
-#### Work Hours
-Adjust the start and end times for each shift type (Morning / Evening / Night).
+### العربية
+افتح من القائمة الجانبية → **الإعدادات**. الخيارات المتاحة:
 
-#### Official Holidays
-- Tap **"Add Holiday"** to add an official holiday
-- Pick the date and enter the occasion name
-- Holidays appear with a special indicator on the calendar
+1. **وضع الثيم** — فاتح / داكن.
+2. **اللغة** — عربي / إنجليزي.
+3. **حجم خط أرقام التقويم** — صغير، وسط، كبير، أو أكبر — يتحكم في حجم أرقام الأيام داخل التقويم.
+4. **الأصوات** — تفعيل أو تعطيل أصوات الضغط.
 
-#### Export PDF
-1. Tap **"Export PDF"**
-2. Choose the month or date range
-3. Share or save the file
-
-#### Share Holidays
-1. Tap **"Share Holidays"** to generate a sharing code
-2. Give the 6-character code to your coworkers
-3. They can import your holidays directly into their app
+كل الإعدادات تُحفظ فوراً على جهازك. إن كنت مسجل الدخول، تُزامَن أيضاً مع السحابة.
 
 ---
 
-### 4. Search
+## 8. Account & Cloud Sync / الحساب والمزامنة
 
-From the side menu, select **"Search"**.
+### English
+A WorkRoster account is **completely optional** — the app works fully offline. An account is useful when you want to:
+- Back up your data.
+- Sync between devices.
 
-#### Search by Shift Type
-1. Select the shift type (Morning / Evening / Night / Rest)
-2. Tap search to see all days of that type
+**Create an account:**
+1. Open the side drawer → **Account**.
+2. Switch to *Register*.
+3. Enter a username (min 3 chars), a password (min 6 chars), and an optional email.
+4. Tap *Create Account*.
 
-#### Search by Specific Date
-1. Type or pick a date
-2. The shift type for that day appears instantly
+**Log in:**
+1. Open *Account*.
+2. In the *username or email* field, enter either one — the app detects which based on the `@` symbol.
+3. Enter your password and tap *Login*.
+4. Once logged in, your saved cloud data is loaded into the app.
 
-#### Search by Date Range
-1. Set a start date and end date
-2. All shifts within that period are displayed
+**Cloud sync:**
+- While signed in, every change (shift config, notes, theme, AI themes) is auto-saved to the cloud (3-second debounce).
+- Sessions last 30 days.
 
----
+**Log out:**
+- Open *Account* → tap *Logout*. Your local data stays intact on the device.
 
-### 5. Theme Store
+### العربية
+حساب WorkRoster **اختياري بالكامل** — التطبيق يعمل بدون إنترنت. الحساب مفيد إذا أردت:
+- نسخة احتياطية لبياناتك.
+- المزامنة بين الأجهزة.
 
-From the side menu, select **"Theme Store"**.
+**إنشاء حساب:**
+1. افتح القائمة الجانبية → **الحساب**.
+2. انتقل إلى *تسجيل جديد*.
+3. أدخل اسم مستخدم (3 أحرف على الأقل)، كلمة سر (6 أحرف على الأقل)، والبريد الإلكتروني (اختياري).
+4. اضغط *إنشاء الحساب*.
 
-#### Preset Themes
-- **Minimalist White** — Clean and simple appearance
-- **Purple Dream** — Elegant purple colors
-- **Bold Classic** — Vibrant, strong colors
-- **Cosmic Ring** — Circular calendar layout
+**تسجيل الدخول:**
+1. افتح *الحساب*.
+2. في حقل *اسم المستخدم أو البريد*، أدخل أيهما — التطبيق يكتشف النوع حسب وجود `@`.
+3. أدخل كلمة السر واضغط *دخول*.
+4. بعد الدخول، تُحمَّل بيانات السحابة إلى التطبيق.
 
-Tap any theme to apply it instantly.
+**المزامنة السحابية:**
+- أثناء تسجيل الدخول، كل تعديل (نمط الشفت، الملاحظات، الثيم، ثيمات AI) يُحفظ تلقائياً (بعد 3 ثواني من آخر تغيير).
+- الجلسة تبقى مفتوحة لمدة 30 يوماً.
 
-#### AI-Generated Themes
-1. Tap **"Create AI Theme"**
-2. Describe what you want, e.g.: "A calm ocean theme with blue tones"
-3. Wait a few seconds for the AI to generate the theme
-4. Tap **"Apply"** to use it or **"Save"** to keep it for later
-5. Up to 10 AI-generated themes can be saved
-
----
-
-### 6. Settings
-
-From the side menu, select **"Settings"**.
-
-- **Appearance**: Toggle between light and dark mode
-- **Language**: Change the app language (Arabic / English)
-- **Sounds**: Turn app sounds on or off
-- **Notifications**: Manage reminders
-
----
-
-### 7. Account
-
-From the side menu, select **"Account"**.
-
-#### Create a New Account
-1. Tap **"Create Account"**
-2. Enter a username (at least 3 characters)
-3. Enter a password (at least 6 characters)
-4. Email is optional
-5. Tap **"Register"**
-
-#### Sign In
-1. Enter your username **or** email address
-2. Enter your password
-3. Tap **"Sign In"**
-
-#### Cloud Sync
-When signed in, your data is automatically synced to the server. You can restore your data on any other device by signing in with the same account.
-
-#### Change Username
-1. Tap **"Change Username"**
-2. Enter the new username
-3. Tap **"Save"**
-
-#### Change Password
-1. Tap **"Change Password"**
-2. Enter your current password
-3. Enter the new password and confirm it
-4. Tap **"Change"**
-
-#### Sign Out
-Tap **"Sign Out"** — your local data on the device remains intact.
-
-#### Delete Account
-> Warning: This action cannot be undone.
-
-1. Tap **"Delete Account"**
-2. Confirm in the first dialog
-3. Confirm again in the final confirmation
-4. Your account and all cloud data are permanently deleted
+**تسجيل الخروج:**
+- افتح *الحساب* → اضغط *خروج*. بياناتك المحلية تبقى كما هي على الجهاز.
 
 ---
 
-### 8. Import Holidays from a Coworker
+## 9. Sharing Holidays / مشاركة الإجازات
 
-1. Get the sharing code from your coworker (6 characters)
-2. Open **"Customize"** from the side menu
-3. Tap **"Import Holidays"**
-4. Enter the code
-5. The holidays are added to your calendar immediately
+### English
+You can share your holiday list with co-workers without needing accounts.
+
+**Generate a sharing code:**
+1. Open *Customize* → scroll to **Holidays**.
+2. Tap *Share Holidays*. The app generates a 6-character code (e.g. `A3F9KX`).
+3. Send this code to your colleague.
+
+**Import holidays from a code:**
+1. In the same section, tap *Import Holidays*.
+2. Type the 6-character code you received.
+3. Tap *Import* — the holidays are merged into your list.
+
+Codes are stored on the server and can be reused anytime.
+
+### العربية
+تستطيع مشاركة قائمة إجازاتك مع زملائك بدون حسابات.
+
+**توليد رمز مشاركة:**
+1. افتح *التخصيص* → اذهب إلى **الإجازات**.
+2. اضغط *مشاركة الإجازات*. يولّد التطبيق رمزاً من 6 أحرف (مثلاً `A3F9KX`).
+3. أرسل الرمز لزميلك.
+
+**استيراد إجازات من رمز:**
+1. في نفس القسم، اضغط *استيراد إجازات*.
+2. اكتب الرمز المكوّن من 6 أحرف الذي وصلك.
+3. اضغط *استيراد* — تُدمج الإجازات مع قائمتك.
+
+الرموز محفوظة على الخادم ويمكن إعادة استخدامها في أي وقت.
 
 ---
 
-*WorkRoster — Built for shift workers, by design.*
+## Tips & Troubleshooting / نصائح وحل المشاكل
+
+### English
+- **Calendar didn’t change after editing the pattern?** Pull-to-refresh, or close and reopen the app.
+- **Can’t log in?** Make sure caps-lock is off and try the email field if you registered with one.
+- **Lost data after reinstalling?** If you had an account, log in again — your data is restored from the cloud.
+- **Reminder not firing?** Check the device’s notification permissions for WorkRoster.
+
+### العربية
+- **التقويم لم يتغير بعد تعديل النمط؟** اسحب لأسفل للتحديث، أو أغلق التطبيق وأعد فتحه.
+- **لا أستطيع تسجيل الدخول؟** تأكد من إيقاف Caps Lock، وجرّب حقل البريد إذا سجّلت به.
+- **فقدت بياناتي بعد إعادة التثبيت؟** إذا كان لديك حساب، فقط سجّل الدخول مجدداً — تُسترجع بياناتك من السحابة.
+- **التذكير لا يعمل؟** افحص أذونات الإشعارات لتطبيق WorkRoster في إعدادات الجهاز.
+
+---
+
+*Last updated: 2026-05-02 — WorkRoster v1.0.1*

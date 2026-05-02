@@ -11,14 +11,21 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/lib/useColors";
-import { useAppTheme } from "@/lib/ThemeContext";
+import { useAppTheme, CalendarFontScale } from "@/lib/ThemeContext";
 import { useSound } from "@/lib/SoundContext";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { language, theme, setLanguage, setTheme, t, isDark } = useAppTheme();
+  const { language, theme, setLanguage, setTheme, t, isDark, calendarFontScale, setCalendarFontScale } = useAppTheme();
   const { soundEnabled, setSoundEnabled, playSound } = useSound();
+
+  const fontScaleOptions: { key: CalendarFontScale; labelAr: string; labelEn: string; size: number }[] = [
+    { key: "small", labelAr: "صغير", labelEn: "Small", size: 12 },
+    { key: "medium", labelAr: "وسط", labelEn: "Medium", size: 14 },
+    { key: "large", labelAr: "كبير", labelEn: "Large", size: 17 },
+    { key: "xlarge", labelAr: "أكبر", labelEn: "X-Large", size: 20 },
+  ];
   const webTopInset = Platform.OS === "web" ? 67 : 0;
   const bgColor = isDark ? "#0D1117" : colors.surface;
   const cardBg = isDark ? "#161B22" : colors.surfaceSecondary;
@@ -78,6 +85,35 @@ export default function SettingsScreen() {
               {t("داكن", "Dark")}
             </Text>
           </Pressable>
+        </View>
+      </View>
+
+      <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+        {t("حجم خط أرقام التقويم", "Calendar Number Font Size")}
+      </Text>
+      <View style={[styles.card, { backgroundColor: cardBg }]}>
+        <View style={styles.fontSizeRow}>
+          {fontScaleOptions.map((opt) => {
+            const active = calendarFontScale === opt.key;
+            return (
+              <Pressable
+                key={opt.key}
+                onPress={() => {
+                  setCalendarFontScale(opt.key);
+                  playSound("toggle");
+                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+                style={[styles.fontSizeBtn, active && { backgroundColor: colors.accent }]}
+              >
+                <Text style={[styles.fontSizeSample, { fontSize: opt.size, color: active ? "#FFF" : colors.text }]}>
+                  15
+                </Text>
+                <Text style={[styles.fontSizeLabel, { color: active ? "#FFF" : colors.textSecondary }]}>
+                  {language === "ar" ? opt.labelAr : opt.labelEn}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
 
@@ -196,5 +232,28 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
+  },
+  fontSizeRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  fontSizeBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: "rgba(127,127,127,0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 64,
+  },
+  fontSizeSample: {
+    fontFamily: "Cairo_700Bold",
+    lineHeight: 26,
+  },
+  fontSizeLabel: {
+    fontFamily: "Cairo_600SemiBold",
+    fontSize: 11,
+    marginTop: 4,
   },
 });
