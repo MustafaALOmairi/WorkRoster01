@@ -6,3 +6,9 @@ id = "yTVvTt2FB2sl1vo22oCOM"
 uri = "file://USER_GUIDE.md"
 type = "text"
 title = "WorkRoster — User Guide (Arabic + English)"
+
+[[outputs]]
+id = "vaq3htwZ3dDdyAaYzXPTV"
+uri = "file://WorkRoster_Presentation.pptx"
+type = "slides"
+title = "WorkRoster — Project Presentation (English, 15 slides)"
